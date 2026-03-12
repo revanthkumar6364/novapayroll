@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  /* Ultra-Consistent Professional SaaS Palette (Razorpay-inspired) */
+  --background: #F7F9FC;
+  --foreground: #111827;
+
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+
+  --sidebar: #0B132B;
+  --sidebar-foreground: #F3F4F6;
+  --sidebar-hover: #1C2541;
+
+  --primary: #1D4ED8;
+  --primary-hover: #1E40AF;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F3F4F6;
+  --secondary-foreground: #1F2937;
+
+  --muted: #F9FAFB;
+  --muted-foreground: #6B7280;
+
+  --accent: #DBEAFE;
+  --accent-foreground: #1D4ED8;
+
+  --success: #10B981;
+  --success-bg: #D1FAE5;
+  --success-text: #065F46;
+
+  --warning: #F59E0B;
+  --warning-bg: #FEF3C7;
+  --warning-text: #92400E;
+
+  --danger: #EF4444;
+  --danger-bg: #FEE2E2;
+  --danger-text: #991B1B;
+
+  --border: #E5E7EB;
+
+  --radius: 0.75rem;
+
+  /* Crisp, minimal shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  color-scheme: light !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base Card Styling */
+.premium-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.premium-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Primary Button High-Contrast */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px 0 rgba(29, 78, 216, 0.39);
+}
+
+.btn-primary:hover {
+  background-color: #1E40AF; /* Hardcoded to dark blue to prevent white-out bugs */
+  color: #FFFFFF !important; /* Forces text to be visible */
+  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.23);
+}
+
+/* Table Utilities */
+.table-header {
+  background-color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.15s ease;
+}
+
+.table-row:hover {
+  background-color: var(--muted);
+}
+
+/* Status Badges */
+.badge-success { background-color: var(--success-bg); color: var(--success-text); }
+.badge-warning { background-color: var(--warning-bg); color: var(--warning-text); }
+.badge-danger { background-color: var(--danger-bg); color: var(--danger-text); }
+.badge-neutral { background-color: var(--secondary); color: var(--secondary-foreground); }
+
+/* Layout Utilities */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Restored Missing Utility Classes for Light Theme */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.mesh-gradient {
+  background-color: var(--background);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(29, 78, 216, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.04) 0px, transparent 50%);
+}
+
+.shadow-premium {
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.05), border 1px solid rgba(0,0,0,0.02);
+}
