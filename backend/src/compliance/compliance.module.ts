@@ -3,8 +3,8 @@ import { ComplianceService } from './compliance.service';
 import { ComplianceController } from './compliance.controller';
 
 @Module({
-    providers: [ComplianceService],
-    controllers: [ComplianceController],
-    exports: [ComplianceService],
+  providers: [ComplianceService],
+  controllers: [ComplianceController],
+  exports: [ComplianceService],
 })
-export class ComplianceModule { }
+export class ComplianceModule {}

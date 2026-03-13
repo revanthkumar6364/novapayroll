@@ -6,7 +6,7 @@ import { SmsService } from './sms.service';
 @Module({
   imports: [],
   providers: [
-    NotificationService, 
+    NotificationService,
     SmsService,
     {
       provide: 'BullQueue_notifications',
@@ -15,7 +15,7 @@ import { SmsService } from './sms.service';
         process: async () => {},
         on: () => {},
       },
-    }
+    },
   ],
   exports: [NotificationService, SmsService],
 })

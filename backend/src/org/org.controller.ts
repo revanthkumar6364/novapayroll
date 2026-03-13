@@ -14,11 +14,16 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('orgs')
 @UseGuards(JwtAuthGuard)
 export class OrgController {
-  constructor(private orgService: OrgService) { }
+  constructor(private orgService: OrgService) {}
 
   @Get(':orgId')
   getOrg(@Param('orgId') orgId: string) {
     return this.orgService.getOrg(orgId);
+  }
+
+  @Get(':orgId/members')
+  getMembers(@Param('orgId') orgId: string) {
+    return this.orgService.listMembers(orgId);
   }
 
   @Patch(':orgId')

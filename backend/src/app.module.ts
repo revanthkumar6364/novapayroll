@@ -13,10 +13,14 @@ import { TenantMiddleware } from './tenant/tenant.middleware';
 import { OtpModule } from './auth/otp/otp.module';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { ComplianceModule } from './compliance/compliance.module';
 import { BotModule } from './bot/bot.module';
+import { SandboxModule } from './sandbox/sandbox.module';
+import { ForexModule } from './forex/forex.module';
+import { VendorModule } from './vendor/vendor.module';
+import { ReimbursementModule } from './reimbursement/reimbursement.module';
+import { InviteModule } from './invite/invite.module';
 
 @Module({
   imports: [
@@ -41,6 +45,11 @@ import { BotModule } from './bot/bot.module';
     NotificationsModule,
     ComplianceModule,
     BotModule,
+    SandboxModule,
+    ForexModule,
+    VendorModule,
+    ReimbursementModule,
+    InviteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

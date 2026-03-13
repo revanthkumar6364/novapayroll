@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,521 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Org {
+  id                 String               @id @default(uuid()) @db.Uuid
+  name               String
+  legalName          String?
+  address            String?
+  gstin              String?
+  onboardingStep     Int                  @default(1)
+  isKycVerified      Boolean              @default(false)
+  isSetupComplete    Boolean              @default(false)
+  statutoryConfig    Json?
+  payrollSettings    Json?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deletedAt          DateTime?
+  auditEvents        AuditEvent[]
+  complianceMonths   ComplianceMonth[]
+  employees          Employee[]
+  invites            Invite[]
+  notificationOutbox NotificationOutbox[]
+  billing            OrgBilling?
+  memberships        OrgMembership[]
+  partnerClients     PartnerClient[]
+  payoutBatches      PayoutBatch[]
+  payrollRuns        PayrollRun[]
+  reportAudits       ReportAudit[]
+  salaryComponents   SalaryComponent[]
+  statutoryDetail    StatutoryDetail?
+  contractors        Contractor[]
+  vendors            Vendor[]
+  vendorPayments     VendorPayment[]
+  reimbursementRequests ReimbursementRequest[]
+  approvalPolicies   ApprovalPolicy[]
+}
+
+model User {
+  id                String                  @id @default(uuid()) @db.Uuid
+  email             String                  @unique
+  password          String
+  name              String
+  phone             String?
+  isVerified        Boolean                 @default(false)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  deletedAt         DateTime?
+  notificationPrefs NotificationPreference?
+  memberships       OrgMembership[]
+  partnerProfile    PartnerProfile?
+}
+
+model OrgMembership {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  orgId     String   @db.Uuid
+  role      Role
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  org       Org      @relation(fields: [orgId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+model Invite {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  orgId     String   @db.Uuid
+  role      Role
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  org       Org      @relation(fields: [orgId], references: [id])
+}
+
+model Employee {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  orgId              String                    @db.Uuid
+  employeeId         String
+  userId             String?                   @db.Uuid
+  firstName          String
+  lastName           String
+  email              String?
+  phone              String?
+  joinDate           DateTime
+  exitDate           DateTime?
+  status             Status                    @default(ACTIVE)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  deletedAt          DateTime?
+  currentRegime      TaxRegime                 @default(NEW)
+  onboardingProgress Int                       @default(0)
+  esiNumber          String?
+  uan                String?
+  attendanceEntries  AttendanceEntry[]
+  benefitEnrollments BenefitEnrollment[]
+  contractor         Contractor?
+  org                Org                       @relation(fields: [orgId], references: [id])
+  bankAccount        EmployeeBankAccount?
+  documents          EmployeeDocument[]
+  loans              EmployeeLoan[]
+  salaryComponents   EmployeeSalaryComponent[]
+  payrollRunItems    PayrollRunItem[]
+  salaryStructures   SalaryStructure[]
+  taxDeclarations    TaxDeclaration[]
+  reimbursementRequests ReimbursementRequest[]
+  salaryRevisions      SalaryRevision[]
+  finalSettlement      FinalSettlement?
+}
+
+model FinalSettlement {
+  id                String       @id @default(uuid()) @db.Uuid
+  employeeId        String       @unique @db.Uuid
+  exitDate          DateTime
+  lastWorkingDay    DateTime
+  noticePeriodDays  Int
+  leaveEncashment   Int          @default(0)
+  gratuity          Int          @default(0)
+  bonus             Int          @default(0)
+  deductions        Int          @default(0)
+  netPayable        Int
+  status            PayoutStatus @default(PENDING)
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  employee          Employee     @relation(fields: [employeeId], references: [id])
+}
+
+model SalaryRevision {
+  id            String   @id @default(uuid()) @db.Uuid
+  employeeId    String   @db.Uuid
+  oldCtc        Int?
+  newCtc        Int
+  effectiveDate DateTime
+  reason        String?
+  status        Status   @default(PENDING)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  employee      Employee @relation(fields: [employeeId], references: [id])
+}
+
+model EmployeeBankAccount {
+  id            String   @id @default(uuid()) @db.Uuid
+  employeeId    String   @unique @db.Uuid
+  accountNumber String
+  ifsc          String
+  bankName      String
+  branchName    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  employee      Employee @relation(fields: [employeeId], references: [id])
+}
+
+model EmployeeDocument {
+  id         String   @id @default(uuid()) @db.Uuid
+  employeeId String   @db.Uuid
+  type       String
+  fileRef    String
+  status     Status   @default(PENDING)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id])
+}
+
+model SalaryStructure {
+  id            String   @id @default(uuid()) @db.Uuid
+  employeeId    String   @db.Uuid
+  effectiveFrom DateTime
+  grossSalary   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  employee      Employee @relation(fields: [employeeId], references: [id])
+}
+
+model SalaryComponent {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  orgId              String                    @db.Uuid
+  name               String
+  type               String
+  isStatutory        Boolean                   @default(false)
+  formula            String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  employeeComponents EmployeeSalaryComponent[]
+  org                Org                       @relation(fields: [orgId], references: [id])
+}
+
+model EmployeeSalaryComponent {
+  id                String          @id @default(uuid()) @db.Uuid
+  employeeId        String          @db.Uuid
+  salaryComponentId String          @db.Uuid
+  amount            Int?
+  percentage        Float?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  employee          Employee        @relation(fields: [employeeId], references: [id])
+  salaryComponent   SalaryComponent @relation(fields: [salaryComponentId], references: [id])
+}
+
+model AttendancePeriod {
+  id         String            @id @default(uuid()) @db.Uuid
+  orgId      String            @db.Uuid
+  month      Int
+  year       Int
+  cutOffDate DateTime
+  isLocked   Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  entries    AttendanceEntry[]
+}
+
+model AttendanceEntry {
+  id            String           @id @default(uuid()) @db.Uuid
+  employeeId    String           @db.Uuid
+  periodId      String           @db.Uuid
+  daysPresent   Float            @default(0)
+  daysLop       Float            @default(0)
+  overtimeHours Float            @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  employee      Employee         @relation(fields: [employeeId], references: [id])
+  period        AttendancePeriod @relation(fields: [periodId], references: [id])
+}
+
+model PayrollRun {
+  id              String           @id @default(uuid()) @db.Uuid
+  orgId           String           @db.Uuid
+  month           Int
+  year            Int
+  type            PayrollRunType   @default(REGULAR)
+  status          PayrollStatus    @default(DRAFT)
+  totalEarnings   Int              @default(0)
+  totalDeductions Int              @default(0)
+  totalNetPay     Int              @default(0)
+  approvedAt      DateTime?
+  lockedAt        DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  payoutBatches   PayoutBatch[]
+  org             Org              @relation(fields: [orgId], references: [id])
+  items           PayrollRunItem[]
+  payslips        Payslip[]
+}
+
+model PayrollRunItem {
+  id            String      @id @default(uuid()) @db.Uuid
+  payrollRunId  String      @db.Uuid
+  employeeId    String      @db.Uuid
+  earnings      Json
+  deductions    Json
+  netPay        Int
+  taxEstimation Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  payoutItem    PayoutItem?
+  employee      Employee    @relation(fields: [employeeId], references: [id])
+  payrollRun    PayrollRun  @relation(fields: [payrollRunId], references: [id])
+}
+
+model Payslip {
+  id           String     @id @default(uuid()) @db.Uuid
+  payrollRunId String     @db.Uuid
+  employeeId   String     @db.Uuid
+  fileRef      String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  payrollRun   PayrollRun @relation(fields: [payrollRunId], references: [id])
+}
+
+model ReimbursementRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  orgId       String    @db.Uuid
+  employeeId  String    @db.Uuid
+  amount      Int
+  description String
+  attachments Json?
+  status      Status    @default(PENDING)
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  org      Org      @relation(fields: [orgId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model PayoutBatch {
+  id              String       @id @default(uuid()) @db.Uuid
+  orgId           String       @db.Uuid
+  payrollRunId    String?      @db.Uuid
+  status          PayoutStatus @default(PENDING)
+  totalAmount     Int
+  externalBatchId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  org             Org          @relation(fields: [orgId], references: [id])
+  payrollRun      PayrollRun?  @relation(fields: [payrollRunId], references: [id])
+  items           PayoutItem[]
+}
+
+model PayoutItem {
+  id               String         @id @default(uuid()) @db.Uuid
+  batchId          String         @db.Uuid
+  payrollRunItemId String         @unique @db.Uuid
+  status           PayoutStatus   @default(PENDING)
+  externalId       String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  batch            PayoutBatch    @relation(fields: [batchId], references: [id])
+  payrollRunItem   PayrollRunItem @relation(fields: [payrollRunItemId], references: [id])
+}
+
+model ComplianceMonth {
+  id        String               @id @default(uuid()) @db.Uuid
+  orgId     String               @db.Uuid
+  month     Int
+  year      Int
+  status    Status               @default(PENDING)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  artifacts ComplianceArtifact[]
+  org       Org                  @relation(fields: [orgId], references: [id])
+}
+
+model ComplianceArtifact {
+  id                String          @id @default(uuid()) @db.Uuid
+  complianceMonthId String          @db.Uuid
+  type              String
+  fileRef           String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  complianceMonth   ComplianceMonth @relation(fields: [complianceMonthId], references: [id])
+}
+
+model Contractor {
+  id          String         @id @default(uuid()) @db.Uuid
+  orgId       String         @db.Uuid
+  employeeId  String         @unique @db.Uuid
+  type        ContractorType
+  pan         String
+  tdsSection  String
+  tdsRate     Float
+  bankAccount String?
+  bankIfsc    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  employee    Employee       @relation(fields: [employeeId], references: [id])
+  org         Org            @relation(fields: [orgId], references: [id])
+}
+
+model StatutoryDetail {
+  id                String   @id @default(uuid()) @db.Uuid
+  orgId             String   @unique @db.Uuid
+  tan               String?
+  pan               String?
+  pfEstablishmentId String?
+  esiRegistrationNo String?
+  ptRegistrationNo  String?
+  signatoryName     String?
+  signatoryPan      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  org               Org      @relation(fields: [orgId], references: [id])
+}
+
+model ReportAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @db.Uuid
+  type      String
+  fileRef   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  org       Org      @relation(fields: [orgId], references: [id])
+}
+
+model TaxDeclaration {
+  id             String    @id @default(uuid()) @db.Uuid
+  employeeId     String    @db.Uuid
+  regime         TaxRegime
+  investments80C Int       @default(0)
+  investments80D Int       @default(0)
+  hraAmount      Int       @default(0)
+  otherIncome    Int       @default(0)
+  isVerified     Boolean   @default(false)
+  year           Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+}
+
+model OfferLetterTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @db.Uuid
+  name      String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BillingPlan {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  price     Int
+  features  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrgBilling {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @unique @db.Uuid
+  planId    String   @db.Uuid
+  usage     Json
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  org       Org      @relation(fields: [orgId], references: [id])
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String?  @db.Uuid
+  actorUserId String?  @db.Uuid
+  eventType   String
+  entityType  String
+  entityId    String?
+  changesJson Json?
+  createdAt   DateTime @default(now())
+  org         Org?     @relation(fields: [orgId], references: [id])
+}
+
+model OtpRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  destination String
+  channel     String   @default("email")
+  otpHash     String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+}
+
+model NotificationPreference {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @db.Uuid
+  emailEnabled    Boolean  @default(true)
+  whatsappEnabled Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model NotificationOutbox {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String?  @db.Uuid
+  userId       String   @db.Uuid
+  channel      String
+  template     String
+  payload      Json
+  status       String   @default("PENDING")
+  retryCount   Int      @default(0)
+  errorMessage String?
+  scheduledAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  org          Org?     @relation(fields: [orgId], references: [id])
+}
+
+model EmployeeLoan {
+  id              String   @id @default(uuid()) @db.Uuid
+  employeeId      String   @db.Uuid
+  amount          Int
+  interestRate    Float    @default(0.0)
+  tenureMonths    Int
+  monthlyEmi      Int
+  remainingAmount Int
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  employee        Employee @relation(fields: [employeeId], references: [id])
+}
+
+model BenefitEnrollment {
+  id             String   @id @default(uuid()) @db.Uuid
+  employeeId     String   @db.Uuid
+  provider       String
+  policyNo       String
+  type           String
+  coverageAmount Int
+  premiumAmount  Int
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       Employee @relation(fields: [employeeId], references: [id])
+}
+
+model PartnerProfile {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @unique @db.Uuid
+  firmName   String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model PartnerClient {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @db.Uuid
+  partnerId   String   @db.Uuid
+  permissions Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  org         Org      @relation(fields: [orgId], references: [id])
 }
 
 enum Role {
@@ -57,504 +569,54 @@ enum TaxRegime {
   NEW
 }
 
-model Org {
-  id                String            @id @default(uuid()) @db.Uuid
-  name              String
-  legalName         String?
-  address           String?
-  gstin             String?
-  onboardingStep    Int               @default(1)
-  isKycVerified     Boolean           @default(false)
-  isSetupComplete   Boolean           @default(false)
-  statutoryConfig   Json?             // PF/ESI/PT/TDS toggles and identifiers
-  payrollSettings   Json?             // Cycle, cut-off, pay date, rounding
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  deletedAt         DateTime?
-
-  memberships       OrgMembership[]
-  employees         Employee[]
-  invites           Invite[]
-  salaryComponents  SalaryComponent[]
-  payrollRuns       PayrollRun[]
-  complianceMonths  ComplianceMonth[]
-  payoutBatches     PayoutBatch[]
-  billing           OrgBilling?
-  auditEvents       AuditEvent[]
-  partnerClients    PartnerClient[]
-  notificationOutbox NotificationOutbox[]
-  statutoryDetail   StatutoryDetail?
-  reportAudits      ReportAudit[]
-}
-
-model User {
-  id                    String                @id @default(uuid()) @db.Uuid
-  email                 String                @unique
-  password              String
-  name                  String
-  phone                 String?
-  isVerified            Boolean               @default(false)
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  deletedAt             DateTime?
-
-  memberships           OrgMembership[]
-  notificationPrefs     NotificationPreference?
-  partnerProfile        PartnerProfile?
-}
-
-model OrgMembership {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  orgId     String    @db.Uuid
-  role      Role
-  status    Status    @default(ACTIVE)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  user      User      @relation(fields: [userId], references: [id])
-  org       Org       @relation(fields: [orgId], references: [id])
-
-  @@unique([userId, orgId])
-}
-
-model Invite {
-  id         String    @id @default(uuid()) @db.Uuid
-  email      String
-  orgId      String    @db.Uuid
-  role       Role
-  token      String    @unique
-  expiresAt  DateTime
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  org        Org       @relation(fields: [orgId], references: [id])
-}
-
-model Employee {
-  id                String            @id @default(uuid()) @db.Uuid
-  orgId             String            @db.Uuid
-  employeeId        String            // External ID like EMP001
-  userId            String?           @db.Uuid // Optional link to User for portal access
-  firstName         String
-  lastName          String
-  uan               String?           // Provident Fund UAN
-  esiNumber         String?           // ESIC Registration Number
-  email             String?
-  phone             String?
-  joinDate          DateTime
-  exitDate          DateTime?
-  status            Status            @default(ACTIVE)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  deletedAt         DateTime?
-
-  org               Org               @relation(fields: [orgId], references: [id])
-  bankAccount       EmployeeBankAccount?
-  documents         EmployeeDocument[]
-  salaryStructures  SalaryStructure[]
-  salaryComponents  EmployeeSalaryComponent[]
-  currentRegime    TaxRegime       @default(NEW)
-  onboardingProgress Int           @default(0)
-  attendanceEntries AttendanceEntry[]
-  payrollRunItems   PayrollRunItem[]
-  taxDeclarations   TaxDeclaration[]
-  contractor        Contractor?
-  loans             EmployeeLoan[]
-  benefitEnrollments BenefitEnrollment[]
-}
-
-model EmployeeBankAccount {
-  id            String    @id @default(uuid()) @db.Uuid
-  employeeId    String    @unique @db.Uuid
-  accountNumber String    // Should be encrypted at rest
-  ifsc          String    // Should be encrypted at rest
-  bankName      String
-  branchName    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  employee      Employee  @relation(fields: [employeeId], references: [id])
-}
-
-model EmployeeDocument {
-  id          String    @id @default(uuid()) @db.Uuid
-  employeeId  String    @db.Uuid
-  type        String    // PAN, Aadhaar, etc.
-  fileRef     String    // S3 path/key
-  status      Status    @default(PENDING)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  employee    Employee  @relation(fields: [employeeId], references: [id])
-}
-
-model SalaryStructure {
-  id            String    @id @default(uuid()) @db.Uuid
-  employeeId    String    @db.Uuid
-  effectiveFrom DateTime
-  grossSalary   Int       // Stored in paise
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  employee      Employee  @relation(fields: [employeeId], references: [id])
-}
-
-model SalaryComponent {
-  id        String    @id @default(uuid()) @db.Uuid
-  orgId     String    @db.Uuid
-  name      String
-  type      String    // EARNING, DEDUCTION
-  isStatutory Boolean @default(false)
-  formula   String?   // Optional formula or logic identifier
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  org       Org       @relation(fields: [orgId], references: [id])
-  employeeComponents EmployeeSalaryComponent[]
-}
-
-model EmployeeSalaryComponent {
-  id                String          @id @default(uuid()) @db.Uuid
-  employeeId        String          @db.Uuid
-  salaryComponentId String          @db.Uuid
-  amount            Int?            // Fixed amount in paise
-  percentage        Float?          // Percentage of base (if applicable)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  employee          Employee        @relation(fields: [employeeId], references: [id])
-  salaryComponent   SalaryComponent @relation(fields: [salaryComponentId], references: [id])
-}
-
-model AttendancePeriod {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @db.Uuid
-  month       Int
-  year        Int
-  cutOffDate  DateTime
-  isLocked    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  entries     AttendanceEntry[]
-}
-
-model AttendanceEntry {
-  id                String          @id @default(uuid()) @db.Uuid
-  employeeId        String          @db.Uuid
-  periodId          String          @db.Uuid
-  daysPresent       Float           @default(0)
-  daysLop           Float           @default(0)
-  overtimeHours     Float           @default(0)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  employee          Employee        @relation(fields: [employeeId], references: [id])
-  period            AttendancePeriod @relation(fields: [periodId], references: [id])
-}
-
-model PayrollRun {
-  id              String        @id @default(uuid()) @db.Uuid
-  orgId           String        @db.Uuid
-  month           Int
-  year            Int
-  type            PayrollRunType @default(REGULAR)
-  status          PayrollStatus @default(DRAFT)
-  totalEarnings   Int           @default(0)
-  totalDeductions Int           @default(0)
-  totalNetPay     Int           @default(0)
-  approvedAt      DateTime?
-  lockedAt        DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  org             Org           @relation(fields: [orgId], references: [id])
-  items           PayrollRunItem[]
-  payslips        Payslip[]
-  payoutBatches   PayoutBatch[]
-}
-
-model PayrollRunItem {
-  id              String      @id @default(uuid()) @db.Uuid
-  payrollRunId    String      @db.Uuid
-  employeeId      String      @db.Uuid
-  earnings        Json        // Breakdown of earnings
-  deductions      Json        // Breakdown of deductions
-  netPay          Int
-  taxEstimation   Int
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  payrollRun      PayrollRun  @relation(fields: [payrollRunId], references: [id])
-  employee        Employee    @relation(fields: [employeeId], references: [id])
-  payoutItem      PayoutItem?
-}
-
-model Payslip {
-  id            String      @id @default(uuid()) @db.Uuid
-  payrollRunId  String      @db.Uuid
-  employeeId    String      @db.Uuid
-  fileRef       String      // S3 path/key
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  payrollRun    PayrollRun  @relation(fields: [payrollRunId], references: [id])
-}
-
-model ReimbursementRequest {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @db.Uuid
-  employeeId  String    @db.Uuid
-  amount      Int
-  description String
-  attachments Json?     // Array of file refs
-  status      Status    @default(PENDING)
-  approvedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model PayoutBatch {
-  id              String        @id @default(uuid()) @db.Uuid
-  orgId           String        @db.Uuid
-  payrollRunId    String?       @db.Uuid
-  status          PayoutStatus  @default(PENDING)
-  totalAmount     Int
-  externalBatchId String?       // From payout provider
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  org             Org           @relation(fields: [orgId], references: [id])
-  payrollRun      PayrollRun?   @relation(fields: [payrollRunId], references: [id])
-  items           PayoutItem[]
-}
-
-model PayoutItem {
-  id              String      @id @default(uuid()) @db.Uuid
-  batchId         String      @db.Uuid
-  payrollRunItemId String      @unique @db.Uuid
-  status          PayoutStatus @default(PENDING)
-  externalId      String?     // From payout provider
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  batch           PayoutBatch @relation(fields: [batchId], references: [id])
-  payrollRunItem  PayrollRunItem @relation(fields: [payrollRunItemId], references: [id])
-}
-
-model ComplianceMonth {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @db.Uuid
-  month       Int
-  year        Int
-  status      Status    @default(PENDING)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  org         Org       @relation(fields: [orgId], references: [id])
-  artifacts   ComplianceArtifact[]
-}
-
-model ComplianceArtifact {
-  id                String          @id @default(uuid()) @db.Uuid
-  complianceMonthId String          @db.Uuid
-  type              String          // PF_CHALLAN, ESI_RETURN, etc.
-  fileRef           String
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  complianceMonth   ComplianceMonth @relation(fields: [complianceMonthId], references: [id])
-}
-
-model Contractor {
-  id              String         @id @default(uuid()) @db.Uuid
-  employeeId      String         @unique @db.Uuid
-  type            ContractorType
-  pan             String
-  tdsSection      String         // 194J, 194C
-  tdsRate         Float          // e.g. 10.0 or 2.0
-  bankAccount     String?
-  bankIfsc        String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  employee        Employee       @relation(fields: [employeeId], references: [id])
-}
-
-model StatutoryDetail {
-  id              String    @id @default(uuid()) @db.Uuid
-  orgId           String    @unique @db.Uuid
-  tan             String?
+model Vendor {
+  id              String             @id @default(uuid()) @db.Uuid
+  orgId           String             @db.Uuid
+  name            String
+  email           String?
+  phone           String?
   pan             String?
-  pfEstablishmentId String?
-  esiRegistrationNo String?
-  ptRegistrationNo  String?
-  signatoryName     String?
-  signatoryPan      String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  org             Org       @relation(fields: [orgId], references: [id])
+  gstin           String?
+  tdsCategory     TDSCategory        @default(SECTION_194C)
+  bankAccount     String?
+  ifsc            String?
+  status          Status             @default(ACTIVE)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  deletedAt       DateTime?
+  org             Org                @relation(fields: [orgId], references: [id])
+  payments        VendorPayment[]
 }
 
-model ReportAudit {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @db.Uuid
-  type        String    // FORM_16, PF_ECR, ESI_CONTRIBUTION, TDS_24Q
-  fileRef     String
-  metadata    Json?
-  createdAt   DateTime  @default(now())
-
-  org         Org       @relation(fields: [orgId], references: [id])
+model VendorPayment {
+  id              String             @id @default(uuid()) @db.Uuid
+  vendorId        String             @db.Uuid
+  orgId           String             @db.Uuid
+  amount          Float
+  tdsRate         Float
+  tdsAmount       Float
+  netAmount       Float
+  status          PayoutStatus       @default(PENDING)
+  paymentDate     DateTime           @default(now())
+  remarks         String?
+  vendor          Vendor             @relation(fields: [vendorId], references: [id])
+  org             Org                @relation(fields: [orgId], references: [id])
 }
 
-model TaxDeclaration {
-  id                String      @id @default(uuid()) @db.Uuid
-  employeeId        String      @db.Uuid
-  regime            TaxRegime
-  investments80C    Int         @default(0) // paise
-  investments80D    Int         @default(0) // paise
-  hraAmount         Int         @default(0) // paise
-  otherIncome       Int         @default(0) // paise
-  isVerified        Boolean     @default(false)
-  year              Int
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  employee          Employee    @relation(fields: [employeeId], references: [id])
+enum TDSCategory {
+  SECTION_194C
+  SECTION_194J
+  SECTION_194I
+  SECTION_194H
 }
-
-model OfferLetterTemplate {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @db.Uuid
+model ApprovalPolicy {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @db.Uuid
   name        String
-  content     String    @db.Text // HTML/Markdown with placeholders like {{name}}
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model BillingPlan {
-  id          String    @id @default(uuid()) @db.Uuid
-  name        String
-  price       Int
-  features    Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model OrgBilling {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @unique @db.Uuid
-  planId      String    @db.Uuid
-  usage       Json
-  status      Status    @default(ACTIVE)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  org         Org       @relation(fields: [orgId], references: [id])
-}
-
-model AuditEvent {
-  id           String    @id @default(uuid()) @db.Uuid
-  orgId        String?   @db.Uuid
-  actorUserId  String?   @db.Uuid // maps to user who performed action
-  eventType    String    // salary_update, bank_update, etc.
-  entityType   String    // Employee, Org, etc.
-  entityId     String?
-  changesJson  Json?     // diff of changes
-  createdAt    DateTime  @default(now())
-
-  org          Org?      @relation(fields: [orgId], references: [id])
-}
-
-model OtpRequest {
-  id           String   @id @default(uuid()) @db.Uuid
-  destination  String   // email or phone
-  channel      String   @default("email")
-  otpHash      String
-  expiresAt    DateTime
-  attempts     Int      @default(0)
-  status       String   @default("PENDING") // PENDING, VERIFIED, EXPIRED
-  createdAt    DateTime @default(now())
-}
-
-model NotificationPreference {
-  id              String    @id @default(uuid()) @db.Uuid
-  userId          String    @unique @db.Uuid
-  emailEnabled    Boolean   @default(true)
-  whatsappEnabled Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  user            User      @relation(fields: [userId], references: [id])
-}
-
-model NotificationOutbox {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String?   @db.Uuid
-  userId      String    @db.Uuid
-  channel     String    // EMAIL, WHATSAPP (defaults to channel in user prefs)
-  template    String
-  payload     Json
-  status      String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  retryCount  Int       @default(0)
-  errorMessage String?
-  scheduledAt DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  org         Org?      @relation(fields: [orgId], references: [id])
-}
-
-model EmployeeLoan {
-  id              String    @id @default(uuid()) @db.Uuid
-  employeeId      String    @db.Uuid
-  amount          Int       // Total loan amount in paise
-  interestRate    Float     @default(0.0)
-  tenureMonths    Int
-  monthlyEmi      Int       // EMI in paise
-  remainingAmount Int       // Remaining balance in paise
-  status          String    @default("PENDING") // PENDING, ACTIVE, CLOSED
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  employee        Employee  @relation(fields: [employeeId], references: [id])
-}
-
-model BenefitEnrollment {
-  id              String    @id @default(uuid()) @db.Uuid
-  employeeId      String    @db.Uuid
-  provider        String    // e.g., Plum, ICICI
-  policyNo        String
-  type            String    // HEALTH, LIFE, ACCIDENT
-  coverageAmount  Int       // In paise
-  premiumAmount   Int       // Monthly premium in paise
-  status          String    @default("ACTIVE")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  employee        Employee  @relation(fields: [employeeId], references: [id])
-}
-
-model PartnerProfile {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @unique @db.Uuid
-  firmName    String
-  isVerified  Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  user        User      @relation(fields: [userId], references: [id])
-}
-
-model PartnerClient {
-  id          String    @id @default(uuid()) @db.Uuid
-  orgId       String    @db.Uuid
-  partnerId   String    @db.Uuid
-  permissions Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  org         Org       @relation(fields: [orgId], references: [id])
+  description String?
+  rules       Json     // e.g. { threshold: 5000, roles: ["ADMIN_FINANCE", "OWNER"] }
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  org         Org      @relation(fields: [orgId], references: [id])
 }

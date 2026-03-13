@@ -323,7 +323,7 @@ export default function Home() {
             <div className="absolute top-0 right-0 w-[50%] h-full bg-[#245DF1]/5 skew-x-[20deg] translate-x-1/2"></div>
             <div className="relative z-10 max-w-4xl mx-auto">
               <h2 className="text-3xl md:text-5xl font-black text-[#0F172A] mb-8 tracking-tight leading-[1.2]">Transform your finance operations today.</h2>
-              <p className="text-[#475569] text-base mb-12 font-medium max-w-xl mx-auto">Join India's most innovative companies scales their team with NovaPayroll.</p>
+              <p className="text-[#475569] text-base mb-12 font-medium max-w-xl mx-auto">Join India&apos;s most innovative companies scales their team with NovaPayroll.</p>
               <Link href="/signup" className="inline-flex items-center gap-3 bg-[#245DF1] text-white px-10 py-4 rounded-xl text-lg font-black hover:bg-[#1d4ed8] transition-all active:scale-95 shadow-xl shadow-[#245DF1]/20">
                 Start Free Trial
                 <ArrowRight size={20} className="text-white" />

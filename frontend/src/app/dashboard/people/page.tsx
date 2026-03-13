@@ -1,21 +1,75 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
     Users, UserPlus, Search, Filter,
     MoreHorizontal, Mail, Phone, Building,
-    ChevronRight, ArrowUpRight, CheckCircle2
+    ChevronRight, ArrowUpRight, CheckCircle2,
+    RefreshCw, TrendingUp as SalaryIcon, LogOut
 } from "lucide-react";
-
-const EMPLOYEES = [
-    { id: "E001", name: "Reva", email: "revanthkumar6364@gmail.com", role: "Product Owner", status: "Active", joinDate: "Jan 2026", type: "Full-time" },
-    { id: "E002", name: "Aarav Sharma", email: "aarav@novacorp.io", role: "Lead Engineer", status: "Active", joinDate: "Feb 2026", type: "Full-time" },
-    { id: "E003", name: "Isha Gupta", email: "isha@novacorp.io", role: "HR Manager", status: "Onboarding", joinDate: "Mar 2026", type: "Full-time" },
-    { id: "E004", name: "Vikram Singh", email: "vikram@contractor.in", role: "UI Designer", status: "Active", joinDate: "Jan 2026", type: "Contractor" },
-];
+import { api } from "@/lib/api";
+import SalaryRevisionModal from "@/components/modals/SalaryRevisionModal";
+import OffboardModal from "@/components/modals/OffboardModal";
 
 export default function PeoplePage() {
+    const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string; currentCtc?: number } | null>(null);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isOffboardModalOpen, setIsOffboardModalOpen] = useState(false);
+
+    const fetchEmployees = async () => {
+        setIsLoading(true);
+        try {
+            const data = await api.get('/employee');
+            setEmployees(data);
+        } catch (err) {
+            console.error("Failed to fetch employees", err);
+            // Fallback to mock data for demo
+            setEmployees([
+                { id: "E001", name: "Reva", email: "revanthkumar6364@gmail.com", role: "Product Owner", status: "Active", joinDate: "Jan 2026", type: "Full-time", currentCtc: 2500000 },
+                { id: "E002", name: "Aarav Sharma", email: "aarav@novacorp.io", role: "Lead Engineer", status: "Active", joinDate: "Feb 2026", type: "Full-time", currentCtc: 1800000 },
+                { id: "E003", name: "Isha Gupta", email: "isha@novacorp.io", role: "HR Manager", status: "Onboarding", joinDate: "Mar 2026", type: "Full-time", currentCtc: 1200000 },
+                { id: "E004", name: "Vikram Singh", email: "vikram@contractor.in", role: "UI Designer", status: "Active", joinDate: "Jan 2026", type: "Contractor", currentCtc: 900000 },
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchEmployees();
+    }, []);
+
+    const handleUpdateCtc = (employee: any) => {
+        setSelectedEmployee({
+            id: employee.id,
+            name: employee.name,
+            currentCtc: employee.currentCtc
+        });
+        setIsRevisionModalOpen(true);
+    };
+
+    const handleTerminate = (employee: any) => {
+        setSelectedEmployee({
+            id: employee.id,
+            name: employee.name
+        });
+        setIsOffboardModalOpen(true);
+    };
+
+    const onRevisionSubmit = async (data: any) => {
+        await api.post('/salary-revision', data);
+        fetchEmployees();
+    };
+
+    const onOffboardSubmit = async (data: any) => {
+        await api.post('/final-settlement', data);
+        fetchEmployees();
+    };
+
     return (
         <DashboardLayout>
             <div className="space-y-10">
@@ -83,70 +137,95 @@ export default function PeoplePage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50/50">
-                                {EMPLOYEES.map((person, i) => (
-                                    <motion.tr
-                                        key={person.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.1 }}
-                                        whileHover={{ backgroundColor: "rgba(36, 93, 241, 0.02)" }}
-                                        className="group cursor-pointer transition-colors"
-                                    >
-                                        <td className="px-10 py-8">
-                                            <div className="flex items-center gap-6">
-                                                <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-[#F1F5F9] flex items-center justify-center font-black text-[#64748B] text-sm shadow-sm relative overflow-hidden group-hover:border-primary/20 transition-all">
-                                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                                    {person.name.substring(0, 2).toUpperCase()}
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-10 py-20 text-center">
+                                            <RefreshCw className="animate-spin text-primary inline-block mb-4" size={32} />
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Workforce Data...</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    employees.map((person: any, i: number) => (
+                                        <motion.tr
+                                            key={person.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.1 }}
+                                            whileHover={{ backgroundColor: "rgba(36, 93, 241, 0.02)" }}
+                                            className="group cursor-pointer transition-colors"
+                                        >
+                                            <td className="px-10 py-8">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-[#F1F5F9] flex items-center justify-center font-black text-[#64748B] text-sm shadow-sm relative overflow-hidden group-hover:border-primary/20 transition-all">
+                                                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                                        {person.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="font-black text-[#0F172A] group-hover:text-primary transition-colors text-base tracking-tight">{person.name}</p>
+                                                        <p className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">{person.id}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <p className="font-black text-[#0F172A] group-hover:text-primary transition-colors text-base tracking-tight">{person.name}</p>
-                                                    <p className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">{person.id}</p>
+                                            </td>
+                                            <td className="px-10 py-8">
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[14px] font-black text-slate-800 leading-none">{person.role}</p>
+                                                    <div className="flex items-center gap-2 text-[12px] text-[#64748B] font-bold">
+                                                        <Mail size={14} className="opacity-50" />
+                                                        <span>{person.email}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-8">
-                                            <div className="space-y-1.5">
-                                                <p className="text-[14px] font-black text-slate-800 leading-none">{person.role}</p>
-                                                <div className="flex items-center gap-2 text-[12px] text-[#64748B] font-bold">
-                                                    <Mail size={14} className="opacity-50" />
-                                                    <span>{person.email}</span>
+                                            </td>
+                                            <td className="px-10 py-8">
+                                                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm ${person.type === 'Full-time'
+                                                    ? 'bg-indigo-50/50 text-indigo-600 border border-indigo-100'
+                                                    : 'bg-orange-50/50 text-orange-600 border border-orange-100'
+                                                    }`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${person.type === 'Full-time' ? 'bg-indigo-600' : 'bg-orange-600'}`}></div>
+                                                    {person.type}
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-8">
-                                            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm ${person.type === 'Full-time'
-                                                ? 'bg-indigo-50/50 text-indigo-600 border border-indigo-100'
-                                                : 'bg-orange-50/50 text-orange-600 border border-orange-100'
-                                                }`}>
-                                                <div className={`w-1.5 h-1.5 rounded-full ${person.type === 'Full-time' ? 'bg-indigo-600' : 'bg-orange-600'}`}></div>
-                                                {person.type}
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-8">
-                                            <div className={`flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl w-fit ${person.status === 'Active'
-                                                ? 'text-emerald-600 bg-emerald-50/50 border border-emerald-100'
-                                                : 'text-primary bg-primary/5 border border-primary/10'
-                                                }`}>
-                                                <div className={`w-2 h-2 rounded-full relative ${person.status === 'Active' ? 'bg-emerald-500' : 'bg-primary animate-pulse'}`}>
-                                                    <div className={`absolute inset-0 rounded-full animate-ping ${person.status === 'Active' ? 'bg-emerald-500/40' : 'bg-primary/40'}`}></div>
+                                            </td>
+                                            <td className="px-10 py-8">
+                                                <div className={`flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl w-fit ${person.status === 'Active'
+                                                    ? 'text-emerald-600 bg-emerald-50/50 border border-emerald-100'
+                                                    : 'text-primary bg-primary/5 border border-primary/10'
+                                                    }`}>
+                                                    <div className={`w-2 h-2 rounded-full relative ${person.status === 'Active' ? 'bg-emerald-500' : 'bg-primary animate-pulse'}`}>
+                                                        <div className={`absolute inset-0 rounded-full animate-ping ${person.status === 'Active' ? 'bg-emerald-500/40' : 'bg-primary/40'}`}></div>
+                                                    </div>
+                                                    {person.status}
                                                 </div>
-                                                {person.status}
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-8 text-right">
-                                            <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl transition-all text-[#64748B] hover:text-primary active:scale-90 border border-transparent hover:border-slate-200">
-                                                <MoreHorizontal size={20} />
-                                            </button>
-                                        </td>
-                                    </motion.tr>
-                                ))}
+                                            </td>
+                                            <td className="px-10 py-8 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleUpdateCtc(person); }}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-emerald-50 rounded-xl transition-all text-[#64748B] hover:text-emerald-600 active:scale-90 border border-transparent hover:border-emerald-100 group/btn"
+                                                        title="Salary Revision"
+                                                    >
+                                                        <SalaryIcon size={18} className="group-hover/btn:scale-110 transition-transform" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleTerminate(person); }}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-rose-50 rounded-xl transition-all text-[#64748B] hover:text-rose-600 active:scale-90 border border-transparent hover:border-rose-100 group/btn"
+                                                        title="Process Exit"
+                                                    >
+                                                        <LogOut size={18} className="group-hover/btn:scale-110 transition-transform" />
+                                                    </button>
+                                                    <button className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl transition-all text-[#64748B] hover:text-primary active:scale-90 border border-transparent hover:border-slate-200">
+                                                        <MoreHorizontal size={20} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                     <div className="p-8 bg-slate-50/40 border-t border-[#F1F5F9] flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Users size={18} className="text-[#CBD5E1]" />
-                            <p className="text-[11px] font-black text-[#64748B] uppercase tracking-widest">Showing 4 of 4 team members</p>
+                            <p className="text-[11px] font-black text-[#64748B] uppercase tracking-widest">Showing {employees.length} of {employees.length} team members</p>
                         </div>
                         <div className="flex gap-4">
                             <button className="px-6 py-2 text-[10px] font-black uppercase tracking-widest text-[#64748B] hover:text-[#0F172A] transition-colors disabled:opacity-30" disabled>Previous</button>
@@ -154,6 +233,20 @@ export default function PeoplePage() {
                         </div>
                     </div>
                 </div>
+
+                <SalaryRevisionModal 
+                    isOpen={isRevisionModalOpen}
+                    onClose={() => setIsRevisionModalOpen(false)}
+                    employee={selectedEmployee}
+                    onRevision={onRevisionSubmit}
+                />
+
+                <OffboardModal 
+                    isOpen={isOffboardModalOpen}
+                    onClose={() => setIsOffboardModalOpen(false)}
+                    employee={selectedEmployee}
+                    onOffboard={onOffboardSubmit}
+                />
             </div>
         </DashboardLayout>
     );

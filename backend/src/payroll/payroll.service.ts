@@ -204,4 +204,26 @@ export class PayrollService {
       },
     });
   }
+
+  async getMyPayslips(userId: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee record not found for this user');
+    }
+
+    return this.prisma.payrollRunItem.findMany({
+      where: { employeeId: employee.id },
+      include: {
+        payrollRun: true,
+      },
+      orderBy: {
+        payrollRun: {
+          year: 'desc',
+        },
+      },
+    });
+  }
 }

@@ -1,4 +1,11 @@
-import { Controller, Post, Get, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PayoutService } from './payout.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -9,11 +16,14 @@ import { Role } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.OWNER, Role.ADMIN_FINANCE)
 export class PayoutController {
-  constructor(private payoutService: PayoutService) { }
+  constructor(private payoutService: PayoutService) {}
 
   @Post(':payrollRunId')
   async initiate(@Request() req, @Param('payrollRunId') payrollRunId: string) {
-    return this.payoutService.initiatePayoutBatch(req.user.orgs[0].id, payrollRunId);
+    return this.payoutService.initiatePayoutBatch(
+      req.user.orgs[0].id,
+      payrollRunId,
+    );
   }
 
   @Get('history')
@@ -26,4 +36,3 @@ export class PayoutController {
     return this.payoutService.getBatchDetails(id);
   }
 }
-

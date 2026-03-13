@@ -72,4 +72,20 @@ export class OrgService {
       data: updateData,
     });
   }
+
+  async listMembers(orgId: string) {
+    return this.prisma.orgMembership.findMany({
+      where: { orgId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
 }

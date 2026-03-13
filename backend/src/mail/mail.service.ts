@@ -19,7 +19,9 @@ export class MailService {
         },
       });
     } else {
-      this.logger.warn('SMTP_HOST not found. MailService will fall back to console logging.');
+      this.logger.warn(
+        'SMTP_HOST not found. MailService will fall back to console logging.',
+      );
     }
   }
 
@@ -67,7 +69,9 @@ export class MailService {
       try {
         await this.transporter.sendMail(mailOptions);
       } catch (error) {
-        this.logger.error(`Failed to send notification to ${to}: ${error.message}`);
+        this.logger.error(
+          `Failed to send notification to ${to}: ${error.message}`,
+        );
         this.logToConsole(mailOptions);
       }
     } else {

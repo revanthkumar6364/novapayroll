@@ -180,7 +180,7 @@ export default function TaxOptimizerPage() {
                                 <Sparkles size={20} />
                                 Next Step
                             </h4>
-                            <p className="text-white/70 font-medium mb-8">Switching to the recommended regime can be done in one click. We'll update your payroll structure automatically.</p>
+                            <p className="text-white/70 font-medium mb-8">Switching to the recommended regime can be done in one click. We&apos;ll update your payroll structure automatically.</p>
                             <button className="w-full bg-white text-indigo-600 py-5 rounded-2xl font-black shadow-xl hover:scale-105 transition-all active:scale-95 btn-elite">
                                 Declare Regime
                             </button>

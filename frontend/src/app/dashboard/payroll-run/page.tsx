@@ -6,11 +6,25 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
     Calculator, CheckCircle2, AlertCircle,
     ArrowRight, Landmark, Zap, ShieldCheck,
-    Users, DollarSign, PieChart, ChevronRight, History
+    Users, DollarSign, PieChart, ChevronRight, History,
+    Upload, Database, Activity, Search, X, ArrowLeft
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function PayrollRunPage() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<'Standard' | 'Arrears' | 'Revisions'>('Standard');
+
+    // Bulk CSV Engine State
+    const [isBulkUploading, setIsBulkUploading] = useState(false);
+    const [bulkProgress, setBulkProgress] = useState(0);
+    const [bulkStep, setBulkStep] = useState(0); // 0: Idle, 1: Loading, 2: Parsing, 3: Validating, 4: Integrity Check, 5: Done
+    const [bulkStats, setBulkStats] = useState({ total: 0, valid: 0, errors: 0 });
+
+    // Multi-Bank Routing State
+    const [isRouting, setIsRouting] = useState(false);
+    const [routingProgress, setRoutingProgress] = useState(0);
+    const [routingComplete, setRoutingComplete] = useState(false);
 
     const downloadPayrollReport = () => {
         const reportContent = `NOVAPAYROLL - PAYROLL BREAKDOWN REPORT
@@ -41,11 +55,50 @@ Generated securely by Novapayroll Engine.`;
         URL.revokeObjectURL(url);
     };
 
+    const handleBulkUploadTrigger = () => {
+        setIsBulkUploading(true);
+        setBulkStep(1);
+        setBulkProgress(0);
+
+        // Simulate 50k rows processing
+        setTimeout(() => { setBulkStep(2); setBulkProgress(20); }, 1000);
+        setTimeout(() => { setBulkStep(3); setBulkProgress(50); }, 2500);
+        setTimeout(() => { setBulkStep(4); setBulkProgress(85); }, 4500);
+        setTimeout(() => { 
+            setBulkStep(5); 
+            setBulkProgress(100);
+            setBulkStats({ total: 54128, valid: 54128, errors: 0 });
+        }, 6500);
+    };
+
+    const handleReleaseFunds = () => {
+        setIsRouting(true);
+        setRoutingProgress(0);
+        setRoutingComplete(false);
+
+        const interval = setInterval(() => {
+            setRoutingProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    setRoutingComplete(true);
+                    return 100;
+                }
+                return prev + 2;
+            });
+        }, 80);
+    };
+
     return (
         <DashboardLayout>
             <div className="max-w-6xl mx-auto space-y-16 py-10">
                 {/* Header Section */}
                 <div className="text-center relative">
+                    <button 
+                        onClick={() => router.push('/dashboard')}
+                        className="absolute left-0 top-0 p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-primary hover:border-primary transition-all shadow-sm group active:scale-95 z-20"
+                    >
+                        <ArrowLeft size={22} className="group-hover:-translate-x-1 transition-transform" />
+                    </button>
                     <div className="absolute inset-0 mesh-gradient opacity-10 blur-3xl -z-10 animate-pulse"></div>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -63,6 +116,27 @@ Generated securely by Novapayroll Engine.`;
                     <p className="text-[#475569] font-bold text-xl max-w-2xl mx-auto leading-relaxed">
                         Automate mass payouts, statutory filings, and compliance reports with absolute precision and speed.
                     </p>
+
+                    {/* Elite Bulk Upload Trigger */}
+                    <div className="mt-10 flex justify-center">
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleBulkUploadTrigger}
+                            className="bg-white border-2 border-slate-100 p-2 rounded-2xl flex items-center gap-4 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all group"
+                        >
+                            <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                <Landmark size={24} />
+                            </div>
+                            <div className="text-left pr-6">
+                                <p className="text-[11px] font-black text-[#94A3B8] uppercase tracking-widest mb-0.5">Engine v2.4</p>
+                                <p className="text-sm font-black text-[#0F172A]">Run Bulk CSV Disbursement</p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-[#94A3B8] group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                <ChevronRight size={18} />
+                            </div>
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Sophisticated Step Indicators */}
@@ -242,7 +316,10 @@ Generated securely by Novapayroll Engine.`;
 
                 {/* Final Execution Button */}
                 <div className="pt-10 flex flex-col items-center gap-6">
-                    <button className="group relative bg-primary text-white px-16 py-7 rounded-[2.5rem] text-2xl font-black shadow-[0_30px_60px_-15px_rgba(36,93,241,0.5)] hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all flex items-center gap-6 overflow-hidden">
+                    <button 
+                        onClick={handleReleaseFunds}
+                        className="group relative bg-primary text-white px-16 py-7 rounded-[2.5rem] text-2xl font-black shadow-[0_30px_60px_-15px_rgba(36,93,241,0.5)] hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all flex items-center gap-6 overflow-hidden"
+                    >
                         <span className="relative z-10">Confirm & Release Funds</span>
                         <ArrowRight size={28} className="relative z-10 group-hover:translate-x-2 transition-transform" />
                         <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
@@ -250,6 +327,258 @@ Generated securely by Novapayroll Engine.`;
                     <p className="text-[#64748B] font-bold text-xs uppercase tracking-widest">funds will be debited from your linked corporate account</p>
                 </div>
             </div>
+
+            {/* Multi-Bank Routing Visualization Modal */}
+            <AnimatePresence>
+                {isRouting && (
+                    <div className="fixed inset-0 bg-[#0F172A]/90 backdrop-blur-2xl z-[150] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-[4rem] w-full max-w-5xl overflow-hidden relative shadow-2xl"
+                        >
+                            <div className="p-20">
+                                <div className="flex items-center justify-between mb-16">
+                                    <div className="space-y-4">
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-widest">
+                                            <Activity size={14} className="animate-pulse" /> Payout Routing Intelligent Engine
+                                        </div>
+                                        <h3 className="text-5xl font-black text-[#0F172A] tracking-tighter">
+                                            Routing <span className="text-gradient">₹3,80,000.00</span>
+                                        </h3>
+                                        <p className="text-[#64748B] text-lg font-medium">Split-disbursement active across 3 high-priority bank nodes.</p>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end gap-2">
+                                        <div className="px-4 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                            <ShieldCheck size={12} /> Success Rate: 99.9%
+                                        </div>
+                                        <p className="text-5xl font-black text-primary tracking-tighter">{Math.min(routingProgress, 100)}%</p>
+                                        <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest">Uptime Optimized</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                    {/* Bank Nodes */}
+                                    {[
+                                        { name: "ICICI Bank Node", type: "Bulk Payout", split: "40%", icon: Landmark, delay: 0 },
+                                        { name: "HDFC Primary", type: "Priority IMPS", split: "35%", icon: ShieldCheck, delay: 0.2 },
+                                        { name: "YES Bank Node", type: "Failover Route", split: "25%", icon: Zap, delay: 0.4 },
+                                    ].map((node, i) => (
+                                        <div key={i} className="relative group">
+                                            <div className="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 space-y-6 relative z-10">
+                                                <div className="w-16 h-16 rounded-[1.5rem] bg-white shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                                    <node.icon size={32} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-2xl font-black text-[#0F172A]">{node.name}</p>
+                                                    <p className="text-[11px] font-black text-[#94A3B8] uppercase tracking-widest mt-1">{node.type}</p>
+                                                </div>
+                                                <div className="pt-4 space-y-2">
+                                                    <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
+                                                        <span className="text-[#64748B]">Node Load</span>
+                                                        <span className="text-primary">{node.split}</span>
+                                                    </div>
+                                                    <div className="h-2 bg-white rounded-full overflow-hidden">
+                                                        <motion.div 
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: routingProgress > (i * 30) ? node.split : 0 }}
+                                                            className="h-full bg-primary"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* Data Flow Animation */}
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border-2 border-primary/5 rounded-[4rem] -z-10 group-hover:border-primary/20 transition-all"></div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-16 bg-[#0F172A] rounded-[3rem] p-12 relative overflow-hidden">
+                                    <div className="flex items-center justify-between relative z-10">
+                                        <div className="flex items-center gap-8">
+                                            <div className="w-20 h-20 bg-primary/20 rounded-[2rem] flex items-center justify-center">
+                                                <Activity size={40} className="text-primary" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-2xl font-black text-white">Live Routing Insights</h4>
+                                                <p className="text-white/40 font-bold">Multiple routes established. Latency: 42ms. Stability: 99.99%.</p>
+                                            </div>
+                                        </div>
+                                        {routingComplete ? (
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Disbursement Lock</p>
+                                                    <p className="text-xs font-bold text-white/60">Verified via ICICI/HDFC/YES</p>
+                                                </div>
+                                                <motion.button 
+                                                    initial={{ scale: 0.9, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    onClick={() => setIsRouting(false)}
+                                                    className="bg-emerald-500 text-white px-12 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all font-sans"
+                                                >
+                                                    Finish Disbursement
+                                                </motion.button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-primary rounded-full animate-ping"></div>
+                                                    <span className="text-primary font-black text-[11px] uppercase tracking-widest">Optimizing Node Affinity...</span>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest animate-pulse">Switching to Failover: Node 3 Active</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Data Stream Visual */}
+                                    <div className="absolute inset-x-0 bottom-0 h-1 flex gap-1 opacity-20">
+                                        {[...Array(50)].map((_, i) => (
+                                            <motion.div 
+                                                key={i}
+                                                className="h-full w-4 bg-primary"
+                                                animate={{ opacity: [0.1, 1, 0.1], scaleY: [1, 2, 1] }}
+                                                transition={{ duration: 1, repeat: Infinity, delay: i * 0.05 }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Bulk Validation Pulse Modal */}
+            <AnimatePresence>
+                {isBulkUploading && (
+                    <div className="fixed inset-0 bg-[#0F172A]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-[4rem] w-full max-w-4xl overflow-hidden relative shadow-2xl border border-white/10"
+                        >
+                            <div className="p-16">
+                                <div className="flex items-start justify-between mb-16">
+                                    <div className="space-y-4">
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full text-[11px] font-black uppercase tracking-widest">
+                                            <Activity size={14} className="animate-pulse" /> Data Validation Engine Active
+                                        </div>
+                                        <h3 className="text-5xl font-black text-[#0F172A] tracking-tighter leading-tight">
+                                            Validating <span className="text-gradient">50,000+ Records.</span>
+                                        </h3>
+                                        <p className="text-[#64748B] text-lg font-medium max-w-md">Running deep integrity audits, bank account verification, and statutory consistency checks.</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="w-24 h-24 rounded-3xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center mb-2">
+                                            <p className="text-3xl font-black text-primary">{bulkProgress}%</p>
+                                        </div>
+                                        <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest">Global Progress</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                                    {/* Left: Engine Pulse Visual */}
+                                    <div className="md:col-span-2 space-y-8">
+                                        <div className="aspect-[21/9] bg-[#0F172A] rounded-[2.5rem] relative overflow-hidden group">
+                                            {/* Data Rows Simulation */}
+                                            <div className="absolute inset-0 p-8 flex flex-col gap-3">
+                                                {[...Array(6)].map((_, i) => (
+                                                    <motion.div 
+                                                        key={i}
+                                                        initial={{ x: -100, opacity: 0 }}
+                                                        animate={{ x: 0, opacity: 1 }}
+                                                        className="h-6 w-full flex gap-4"
+                                                    >
+                                                        <div className="w-24 h-full bg-slate-800/50 rounded-lg" />
+                                                        <div className="w-full h-full bg-slate-800/20 rounded-lg relative overflow-hidden">
+                                                            <motion.div 
+                                                                className="absolute inset-0 bg-primary/20"
+                                                                animate={{ x: ["-100%", "200%"] }}
+                                                                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                                                            />
+                                                        </div>
+                                                        <div className="w-32 h-full bg-slate-800/50 rounded-lg" />
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                            
+                                            {/* The "Pulse" Gate */}
+                                            <motion.div 
+                                                className="absolute top-0 bottom-0 w-1 bg-primary/50 shadow-[0_0_40px_rgba(36,93,241,1)] z-10"
+                                                animate={{ left: ["0%", "100%", "0%"] }}
+                                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                            />
+                                            
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-60 pointer-events-none" />
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-6">
+                                            {[
+                                                { label: "Total Rows", value: bulkStats.total ? bulkStats.total.toLocaleString() : "---", icon: Database, color: "text-slate-900" },
+                                                { label: "Valid Records", value: bulkStats.valid ? bulkStats.valid.toLocaleString() : "---", icon: CheckCircle2, color: "text-emerald-500" },
+                                                { label: "Errors Found", value: "0", icon: AlertCircle, color: "text-red-500" },
+                                            ].map((stat, i) => (
+                                                <div key={i} className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                                    <div className={`w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-4 ${stat.color}`}>
+                                                        <stat.icon size={20} />
+                                                    </div>
+                                                    <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+                                                    <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest mt-1">{stat.label}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Steps and Action */}
+                                    <div className="flex flex-col justify-between">
+                                        <div className="space-y-8">
+                                            {[
+                                                { id: 1, label: "Stream Parsing", desc: "Reading 50k CSV buffers" },
+                                                { id: 2, label: "Schema Validation", desc: "Checking field type integrity" },
+                                                { id: 3, label: "Identity Verification", desc: "Bank Account & IFSC lookups" },
+                                                { id: 4, label: "Anomaly Detection", desc: "Duplicate payment scan" },
+                                            ].map((step) => (
+                                                <div key={step.id} className={`flex gap-4 transition-all duration-500 ${bulkStep < step.id ? 'opacity-20' : 'opacity-100'}`}>
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black ${bulkStep > step.id ? 'bg-emerald-500 text-white' : bulkStep === step.id ? 'bg-primary text-white animate-pulse' : 'bg-slate-100 text-[#94A3B8]'}`}>
+                                                        {bulkStep > step.id ? <CheckCircle2 size={16} /> : step.id}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-[#0F172A]">{step.label}</p>
+                                                        <p className="text-[11px] font-bold text-[#64748B]">{step.desc}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {bulkStep === 5 && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="space-y-4 pt-8"
+                                            >
+                                                <button 
+                                                    onClick={() => setIsBulkUploading(false)}
+                                                    className="w-full py-5 bg-[#0F172A] text-white rounded-[2rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-95"
+                                                >
+                                                    Confirm & Load Session
+                                                </button>
+                                                <button 
+                                                    onClick={() => setIsBulkUploading(false)}
+                                                    className="w-full text-[11px] font-black text-[#64748B] uppercase tracking-widest hover:text-primary transition-colors"
+                                                >
+                                                    Discard Results
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </DashboardLayout>
     );
 }

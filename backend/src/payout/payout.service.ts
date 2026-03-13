@@ -1,26 +1,37 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PayoutStatus } from '@prisma/client';
 
 @Injectable()
 export class PayoutService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async initiatePayoutBatch(orgId: string, payrollRunId: string) {
     // 1. Verify payroll run
     const run = await this.prisma.payrollRun.findUnique({
       where: { id: payrollRunId },
-      include: { items: true }
+      include: { items: true },
     });
 
     if (!run) throw new NotFoundException('Payroll run not found');
-    if (run.orgId !== orgId) throw new BadRequestException('Not authorized for this payroll run');
+    if (run.orgId !== orgId)
+      throw new BadRequestException('Not authorized for this payroll run');
 
     // Check if already paid
     const existingBatch = await this.prisma.payoutBatch.findFirst({
-      where: { payrollRunId, status: { in: [PayoutStatus.SUCCESS, PayoutStatus.PROCESSING] } }
+      where: {
+        payrollRunId,
+        status: { in: [PayoutStatus.SUCCESS, PayoutStatus.PROCESSING] },
+      },
     });
-    if (existingBatch) throw new BadRequestException('Payout already initiated or completed for this run');
+    if (existingBatch)
+      throw new BadRequestException(
+        'Payout already initiated or completed for this run',
+      );
 
     // 2. Create Payout Batch
     const batch = await this.prisma.payoutBatch.create({
@@ -30,13 +41,13 @@ export class PayoutService {
         totalAmount: run.totalNetPay,
         status: PayoutStatus.PROCESSING,
         items: {
-          create: run.items.map(item => ({
+          create: run.items.map((item) => ({
             payrollRunItemId: item.id,
             status: PayoutStatus.PENDING,
-          }))
-        }
+          })),
+        },
       },
-      include: { items: true }
+      include: { items: true },
     });
 
     // 3. Simulate Async Bank Processing
@@ -52,7 +63,10 @@ export class PayoutService {
         // Bulk update items to SUCCESS
         await this.prisma.payoutItem.updateMany({
           where: { batchId },
-          data: { status: PayoutStatus.SUCCESS, externalId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}` }
+          data: {
+            status: PayoutStatus.SUCCESS,
+            externalId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}`,
+          },
         });
 
         // Update batch status
@@ -60,8 +74,8 @@ export class PayoutService {
           where: { id: batchId },
           data: {
             status: PayoutStatus.SUCCESS,
-            externalBatchId: `B-${Date.now()}`
-          }
+            externalBatchId: `B-${Date.now()}`,
+          },
         });
       } catch (error) {
         console.error('Payout simulation failed:', error);
@@ -75,8 +89,8 @@ export class PayoutService {
       orderBy: { createdAt: 'desc' },
       include: {
         payrollRun: true,
-        _count: { select: { items: true } }
-      }
+        _count: { select: { items: true } },
+      },
     });
   }
 
@@ -88,12 +102,12 @@ export class PayoutService {
           include: {
             payrollRunItem: {
               include: {
-                employee: true
-              }
-            }
-          }
-        }
-      }
+                employee: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 }

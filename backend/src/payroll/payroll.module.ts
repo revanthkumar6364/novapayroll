@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PayrollService } from './payroll.service';
 import { PayrollController } from './payroll.controller';
+import { MePayrollController } from './me-payroll.controller';
 import { TaxService } from './tax.service';
 import { OfferService } from './offer.service';
 import { ReportService } from './report.service';
@@ -16,7 +17,7 @@ import { BenefitService } from './benefit.service';
     ContractorService,
     BenefitService,
   ],
-  controllers: [PayrollController],
+  controllers: [PayrollController, MePayrollController],
   exports: [
     PayrollService,
     TaxService,

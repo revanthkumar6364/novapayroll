@@ -112,7 +112,7 @@ export default function VerifyOtp({ destination, onSuccess }: VerifyOtpProps) {
                     <ShieldCheck size={32} />
                 </div>
                 <h1 className="text-2xl font-bold mb-2">Verify your phone</h1>
-                <p className="text-muted-foreground">We've sent a 6-digit code to <span className="text-foreground font-medium">{destination}</span></p>
+                <p className="text-muted-foreground">We&apos;ve sent a 6-digit code to <span className="text-foreground font-medium">{destination}</span></p>
             </div>
 
             <div className="flex justify-between gap-2 mb-8">

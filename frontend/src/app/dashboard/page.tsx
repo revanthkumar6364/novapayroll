@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
     Zap, CheckCircle2, Lock, ChevronRight,
     UserPlus, Clock, ShieldCheck, Landmark,
-    Users, BarChart3, ArrowRight, ArrowUpRight
+    Users, BarChart3, ArrowRight, ArrowUpRight, HelpCircle
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -64,7 +64,7 @@ export default function DashboardOverview() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="text-4xl font-black text-[#0F172A] tracking-tight"
                             >
-                                Let's build your <span className="text-gradient">Empire.</span>
+                                Let&apos;s build your <span className="text-gradient">Empire.</span>
                             </motion.h1>
                             <p className="text-[#475569] font-bold text-lg">Follow these steps to go live with NovaPayroll in minutes.</p>
                         </div>
@@ -100,6 +100,36 @@ export default function DashboardOverview() {
                             </div>
                         </div>
                     </motion.div>
+                </div>
+
+                {/* Global Markets Monitor [NEW] */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                        { code: 'USD', rate: 0.012, trend: '+0.2%' },
+                        { code: 'EUR', rate: 0.011, trend: '-0.1%' },
+                        { code: 'GBP', rate: 0.0094, trend: '+0.5%' },
+                    ].map((fx, i) => (
+                        <motion.div
+                            key={i}
+                            whileHover={{ y: -5 }}
+                            className="premium-card p-6 bg-white border border-slate-100 flex items-center justify-between group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-xs uppercase">
+                                    {fx.code}
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1 INR to {fx.code}</p>
+                                    <p className="text-xl font-black text-slate-800 tracking-tight">{fx.rate}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-md ${fx.trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                    {fx.trend}
+                                </span>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
 
                 {/* Setup Checklist */}
@@ -209,6 +239,5 @@ export default function DashboardOverview() {
     );
 }
 
-function HelpCircle(props: any) {
-    return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>;
-}
+
+// Removed redundant HelpCircle function

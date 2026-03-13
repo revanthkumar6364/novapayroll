@@ -10,4 +10,4 @@ import { NotificationsModule } from '../../notifications/notifications.module';
   providers: [OtpService],
   exports: [OtpService],
 })
-export class OtpModule { }
+export class OtpModule {}

@@ -5,7 +5,8 @@ import { TenantService } from '../tenant/tenant.service';
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy {
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor(private readonly tenantService: TenantService) {
     super();
   }
@@ -50,17 +51,25 @@ export class PrismaService
                 ].includes(operation)
               ) {
                 // Inject orgId into where clause
-                (args as any).where = { ...(args as any).where, orgId: tenantId };
+                (args as any).where = {
+                  ...(args as any).where,
+                  orgId: tenantId,
+                };
               }
               if (['create', 'createMany'].includes(operation)) {
                 // Inject orgId into data
                 if (operation === 'create') {
-                  (args as any).data = { ...(args as any).data, orgId: tenantId };
-                } else {
-                  (args as any).data = ((args as any).data as any[]).map((item) => ({
-                    ...item,
+                  (args as any).data = {
+                    ...(args as any).data,
                     orgId: tenantId,
-                  }));
+                  };
+                } else {
+                  (args as any).data = ((args as any).data as any[]).map(
+                    (item) => ({
+                      ...item,
+                      orgId: tenantId,
+                    }),
+                  );
                 }
               }
             }
