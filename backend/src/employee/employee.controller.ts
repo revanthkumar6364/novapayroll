@@ -39,7 +39,7 @@ export class EmployeeController {
   updateEmployee(
     @Query('orgId') orgId: string,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: Partial<CreateEmployeeDto>,
   ) {
     return this.employeeService.updateEmployee(orgId, id, dto);
   }

@@ -13,7 +13,7 @@ export class BenefitService {
   ) {
     const monthlyEmi = Math.floor((amount * (1 + interestRate / 100)) / tenure);
 
-    return (this.prisma as any).employeeLoan.create({
+    return this.prisma.employeeLoan.create({
       data: {
         employeeId,
         amount,
@@ -27,7 +27,7 @@ export class BenefitService {
   }
 
   async getActiveLoans(employeeId: string) {
-    return (this.prisma as any).employeeLoan.findMany({
+    return this.prisma.employeeLoan.findMany({
       where: { employeeId, status: 'ACTIVE' },
     });
   }
@@ -42,7 +42,7 @@ export class BenefitService {
       premiumAmount: number;
     },
   ) {
-    return (this.prisma as any).benefitEnrollment.create({
+    return this.prisma.benefitEnrollment.create({
       data: {
         employeeId,
         ...data,
@@ -52,7 +52,7 @@ export class BenefitService {
   }
 
   async getEnrollments(employeeId: string) {
-    return (this.prisma as any).benefitEnrollment.findMany({
+    return this.prisma.benefitEnrollment.findMany({
       where: { employeeId, status: 'ACTIVE' },
     });
   }

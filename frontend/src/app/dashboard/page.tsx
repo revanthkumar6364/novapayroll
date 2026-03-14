@@ -1,236 +1,557 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
     Zap, CheckCircle2, Lock, ChevronRight,
-    UserPlus, Clock, ShieldCheck, Landmark,
-    Users, BarChart3, ArrowRight, ArrowUpRight, HelpCircle
+    UserPlus, Clock, Landmark,
+    Users, BarChart3, ArrowRight, ArrowUpRight, HelpCircle,
+    Shield, Briefcase, FileText, UserCheck
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import PayrollDateModal from "@/components/modals/PayrollDateModal";
+import SalaryStructureModal from "@/components/modals/SalaryStructureModal";
+import AddEmployeeModal from "@/components/modals/AddEmployeeModal";
+import StatutoryComplianceModal from "@/components/modals/StatutoryComplianceModal";
+import VerificationModal, { VerificationMode } from "@/components/modals/VerificationModal";
+import FinalActivationModal from "@/components/modals/FinalActivationModal";
+import InviteDelegateModal from "@/components/modals/InviteDelegateModal";
+import ResourceHubModal, { ResourceTab } from "@/components/modals/ResourceHubModal";
 
 const SETUP_STEPS = [
     {
         category: "Basic details",
-        duration: "5 mins",
         steps: [
-            { title: "Set payroll date", status: "start", description: "Choose when your employees get paid each month." },
-            { title: "Set employee salary structure", status: "locked", description: "Define base, HRA, and other allowances." },
+            { id: 1, title: "Set payroll date", status: "active", duration: "2 mins", description: "Define the salary disbursement cycle for your organization." },
+            { id: 2, title: "Set employee salary structure", status: "locked", duration: "5 mins", description: "Configure base, HRA, LTA and other statutory components." },
         ]
     },
     {
         category: "Compliance and people",
-        duration: "10 mins",
         steps: [
-            { title: "Add employee details", status: "locked", description: "Import your team or add them manually." },
-            { title: "Statutory compliance setup", status: "locked", description: "Configure PF, PT, ESI, and TDS." },
+            { id: 3, title: "Add employee details", status: "locked", duration: "10 mins", description: "Onboard your workforce via bulk upload or manual entry." },
+            { id: 4, title: "Statutory compliance setup", status: "locked", duration: "8 mins", description: "Link PF, ESI, Professional Tax and LWF registrations." },
         ]
     },
     {
-        category: "KYC verification",
-        duration: "10 mins",
+        category: "Verification",
         steps: [
-            { title: "Verify organization PAN", status: "locked", description: "Required for legal and tax purposes." },
-            { title: "Bank account verification", status: "locked", description: "Securely link your account for payouts." },
+            { id: 5, title: "Verify organization PAN", status: "locked", duration: "1 min", description: "Validate legal identity for tax filing and bank mandates." },
+            { id: 6, title: "Bank account verification", status: "locked", duration: "3 mins", description: "Connect corporate account for automated fund transfers." },
+        ]
+    },
+    {
+        category: "Live Execution",
+        steps: [
+            { id: 7, title: "Initialize first payroll", status: "locked", duration: "5 mins", description: "Generate the first salary register for your onboarded employees." }
         ]
     }
 ];
 
 export default function DashboardOverview() {
+    const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+    const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
+    const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+    const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
+    const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+    const [isFinalModalOpen, setIsFinalModalOpen] = useState(false);
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+    const [resourceTab, setResourceTab] = useState<ResourceTab>('Docs');
+    const [verificationMode, setVerificationMode] = useState<VerificationMode>('pan');
+    const [onboardingData, setOnboardingData] = useState<any>(null);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("Configuration saved successfully");
+
+    // Mock orgId for now - in production this comes from Auth Context
+    const orgId = "123e4567-e89b-12d3-a456-426614174000"; 
+
+    useEffect(() => {
+        fetchOrgData();
+    }, []);
+
+    const fetchOrgData = async () => {
+        try {
+            // Priority 1: Check Local Storage (for persistent demo experience)
+            const savedData = localStorage.getItem('nova_onboarding_data');
+            const savedEmployees = localStorage.getItem('nova_employees');
+            
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                setOnboardingData(parsedData);
+                setCurrentStep(parsedData.onboardingStep || 1);
+                
+                if (savedEmployees) {
+                    setEmployees(JSON.parse(savedEmployees));
+                }
+                
+                setIsLoading(false);
+                return;
+            }
+
+            // Priority 2: Simulate API delay for first-time users
+            setTimeout(() => {
+                setOnboardingData({
+                    onboardingStep: 1,
+                    payrollSettings: null
+                });
+                setIsLoading(false);
+            }, 500);
+        } catch (error) {
+            console.error("Failed to fetch org data", error);
+            setIsLoading(false);
+        }
+    };
+
+    // Professional Persistence Engine: Sync state to LocalStorage
+    useEffect(() => {
+        if (onboardingData) {
+            const dataToSave = {
+                ...onboardingData,
+                onboardingStep: currentStep
+            };
+            localStorage.setItem('nova_onboarding_data', JSON.stringify(dataToSave));
+        }
+        if (employees.length > 0) {
+            localStorage.setItem('nova_employees', JSON.stringify(employees));
+        }
+    }, [onboardingData, employees, currentStep]);
+
+    const handleStepClick = (stepId: number) => {
+        if (stepId === 1) {
+            setIsDateModalOpen(true);
+        } else if (stepId === 2) {
+            setIsSalaryModalOpen(true);
+        } else if (stepId === 3) {
+            setIsEmployeeModalOpen(true);
+        } else if (stepId === 4) {
+            setIsComplianceModalOpen(true);
+        } else if (stepId === 5) {
+            setVerificationMode('pan');
+            setIsVerificationModalOpen(true);
+        } else if (stepId === 6) {
+            setVerificationMode('bank');
+            setIsVerificationModalOpen(true);
+        } else if (stepId === 7) {
+            // This will be implemented with a new modal
+            setIsFinalModalOpen(true);
+        }
+    };
+
+    const handleSaveDate = async (date: number) => {
+        try {
+            // Show professional completion feedback
+            setShowSuccessToast(true);
+            
+            // Simulating API persistence
+            setTimeout(() => {
+                setOnboardingData((prev: any) => ({
+                    ...prev,
+                    onboardingStep: 2,
+                    payrollSettings: { payDate: date }
+                }));
+                setCurrentStep(2);
+                setIsDateModalOpen(false);
+                setShowSuccessToast(false);
+            }, 800);
+        } catch (error) {
+            console.error("Failed to save payroll date", error);
+        }
+    };
+
+    const handleSaveSalary = async (data: any) => {
+        try {
+            setShowSuccessToast(true);
+            setTimeout(() => {
+                setOnboardingData((prev: any) => ({
+                    ...prev,
+                    onboardingStep: 3,
+                    salaryComponents: data
+                }));
+                setCurrentStep(3);
+                setIsSalaryModalOpen(false);
+                setShowSuccessToast(false);
+            }, 800);
+        } catch (error) {
+            console.error("Failed to save salary structure", error);
+        }
+    };
+
+    const handleSaveEmployees = async (newEmployees: any[]) => {
+        try {
+            setShowSuccessToast(true);
+            setTimeout(() => {
+                setEmployees(prev => [...prev, ...newEmployees]);
+                // Automatically move to next step or update count
+                setOnboardingData((prev: any) => ({
+                    ...prev,
+                    onboardingStep: 4,
+                }));
+                setCurrentStep(4);
+                setIsEmployeeModalOpen(false);
+                setShowSuccessToast(false);
+            }, 1200);
+        } catch (error) {
+            console.error("Failed to save employees", error);
+        }
+    };
+
+    const handleSaveCompliance = async (data: any) => {
+        try {
+            setShowSuccessToast(true);
+            setTimeout(() => {
+                setOnboardingData((prev: any) => ({
+                    ...prev,
+                    onboardingStep: 5,
+                    compliance: data
+                }));
+                setCurrentStep(5);
+                setIsComplianceModalOpen(false);
+                setShowSuccessToast(false);
+            }, 1500);
+        } catch (error) {
+            console.error("Failed to save compliance", error);
+        }
+    };
+
+    const handleVerificationComplete = async (data: any) => {
+        try {
+            setShowSuccessToast(true);
+            const isPan = data.mode === 'pan';
+            const nextStep = isPan ? 6 : 7;
+            
+            setTimeout(() => {
+                setOnboardingData((prev: any) => ({
+                    ...prev,
+                    onboardingStep: nextStep,
+                    [isPan ? 'panVerification' : 'bankVerification']: data
+                }));
+                setCurrentStep(nextStep);
+                setIsVerificationModalOpen(false);
+                setShowSuccessToast(false);
+            }, 1000);
+        } catch (error) {
+            console.error("Verification failed", error);
+        }
+    };
+
+    const handleFinalActivation = async (data: any) => {
+        try {
+            setToastMessage("Organization Activation Complete");
+            setShowSuccessToast(true);
+            setTimeout(() => {
+                setOnboardingData((prev: any) => ({
+                    ...prev,
+                    onboardingStep: 8,
+                    activation: data
+                }));
+                setCurrentStep(8);
+                setIsFinalModalOpen(false);
+                setShowSuccessToast(false);
+            }, 1000);
+        } catch (error) {
+            console.error("Final activation failed", error);
+        }
+    };
+
+    const triggerToast = (message: string) => {
+        setToastMessage(message);
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 2500);
+    };
+
+    const openResource = (tab: ResourceTab) => {
+        setResourceTab(tab);
+        setIsResourceModalOpen(true);
+    };
+
+    const steps = SETUP_STEPS.map(section => ({
+        ...section,
+        steps: section.steps.map(step => {
+            const isCompleted = step.id < currentStep;
+            const isActive = step.id === currentStep;
+            const isLocked = step.id > currentStep;
+            
+            let summary = null;
+            if (isCompleted && step.id === 1) {
+                summary = `Monthly • ${onboardingData?.payrollSettings?.payDate}${getOrdinal(onboardingData?.payrollSettings?.payDate)} of month`;
+            }
+            if (isCompleted && step.id === 2) {
+                summary = "Active (PF, ESI, HRA included)";
+            }
+            if (isCompleted && step.id === 3) {
+                summary = `${employees.length} employee${employees.length > 1 ? 's' : ''} added to registry`;
+            }
+            if (isCompleted && step.id === 4) {
+                summary = `Linked (PF: ${onboardingData?.compliance?.pf?.id || 'Active'})`;
+            }
+            if (isCompleted && step.id === 5) {
+                summary = `Identity Validated (${onboardingData?.panVerification?.id || 'Active'})`;
+            }
+            if (isCompleted && step.id === 6) {
+                summary = "Account Connected (Penny Drop Verified)";
+            }
+            if (isCompleted && step.id === 7) {
+                summary = "Active (Live Execution Phase)";
+            }
+
+            return {
+                ...step,
+                status: isCompleted ? 'completed' : isActive ? 'active' : 'locked',
+                summary
+            };
+        })
+    }));
+
+    function getOrdinal(n: number) {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return s[(v - 20) % 10] || s[v] || s[0];
+    }
+
+    const progress = Math.round(((currentStep - 1) / 7) * 100);
+
     return (
         <DashboardLayout>
-            <div className="space-y-12">
-                {/* Welcome Header */}
-                <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-10">
-                    <div className="flex items-center gap-10">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="w-32 h-32 shrink-0 relative hidden sm:block group"
-                        >
-                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
-                            
-                            {/* Premium Code-Based UI Illustration */}
-                            <div className="w-full h-full bg-white rounded-3xl border border-slate-200 shadow-premium flex items-center justify-center relative z-10 overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
-                                <BarChart3 size={48} className="text-primary relative z-10 drop-shadow-sm" strokeWidth={1.5} />
-                                <div className="absolute bottom-3 right-3 text-[10px] font-black tracking-widest text-[#64748B] opacity-50">NOVA</div>
-                            </div>
-                        </motion.div>
-                        <div className="space-y-3">
-                            <motion.h1
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-4xl font-black text-[#0F172A] tracking-tight"
-                            >
-                                Let&apos;s build your <span className="text-gradient">Empire.</span>
-                            </motion.h1>
-                            <p className="text-[#475569] font-bold text-lg">Follow these steps to go live with NovaPayroll in minutes.</p>
-                        </div>
-                    </div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex flex-col gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 min-w-[300px] relative overflow-hidden group"
+            <PayrollDateModal 
+                isOpen={isDateModalOpen} 
+                onClose={() => setIsDateModalOpen(false)} 
+                onSave={handleSaveDate}
+            />
+            <SalaryStructureModal 
+                isOpen={isSalaryModalOpen}
+                onClose={() => setIsSalaryModalOpen(false)}
+                onSave={handleSaveSalary}
+            />
+            <AddEmployeeModal 
+                isOpen={isEmployeeModalOpen}
+                onClose={() => setIsEmployeeModalOpen(false)}
+                onSave={handleSaveEmployees}
+                salaryPolicy={onboardingData?.salaryComponents || []}
+            />
+            <StatutoryComplianceModal 
+                isOpen={isComplianceModalOpen}
+                onClose={() => setIsComplianceModalOpen(false)}
+                onSave={handleSaveCompliance}
+            />
+            <VerificationModal 
+                isOpen={isVerificationModalOpen}
+                mode={verificationMode}
+                onClose={() => setIsVerificationModalOpen(false)}
+                onVerified={handleVerificationComplete}
+            />
+            <FinalActivationModal 
+                isOpen={isFinalModalOpen}
+                onClose={() => setIsFinalModalOpen(false)}
+                onActivate={handleFinalActivation}
+                onboardingData={onboardingData}
+                employeeCount={employees.length}
+            />
+            <InviteDelegateModal 
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                onInvite={(email, role) => {
+                    triggerToast(`Invitation sent to ${email} as ${role}`);
+                }}
+            />
+            <ResourceHubModal 
+                isOpen={isResourceModalOpen}
+                onClose={() => setIsResourceModalOpen(false)}
+                initialTab={resourceTab}
+            />
+            {/* Success Toast */}
+            <AnimatePresence>
+                {showSuccessToast && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-[#012652] text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-white/10"
                     >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="flex items-center justify-between relative z-10">
-                            <div className="space-y-1">
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#64748B]">Onboarding Progress</span>
-                                <h4 className="text-xl font-black text-[#0F172A]">0 / 7 Steps</h4>
-                            </div>
-                            <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center">
-                                <Zap size={28} className="text-primary animate-pulse" />
-                            </div>
-                        </div>
-                        <div className="space-y-2 relative z-10">
-                            <div className="flex justify-between text-[10px] font-bold text-[#64748B]">
-                                <span>COMPLETION</span>
-                                <span>5%</span>
-                            </div>
-                            <div className="w-full h-2.5 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: "5%" }}
-                                    transition={{ duration: 1.2, delay: 0.5 }}
-                                    className="h-full bg-premium-gradient shadow-[0_0_10px_rgba(36,93,241,0.4)]"
-                                ></motion.div>
-                            </div>
-                        </div>
+                        <CheckCircle2 size={18} className="text-[#10B981]" />
+                        <span className="text-sm font-bold tracking-tight">{toastMessage}</span>
                     </motion.div>
-                </div>
-
-                {/* Global Markets Monitor [NEW] */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                        { code: 'USD', rate: 0.012, trend: '+0.2%' },
-                        { code: 'EUR', rate: 0.011, trend: '-0.1%' },
-                        { code: 'GBP', rate: 0.0094, trend: '+0.5%' },
-                    ].map((fx, i) => (
-                        <motion.div
-                            key={i}
-                            whileHover={{ y: -5 }}
-                            className="premium-card p-6 bg-white border border-slate-100 flex items-center justify-between group"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-xs uppercase">
-                                    {fx.code}
+                )}
+            </AnimatePresence>
+            <div className="min-h-screen bg-[#F8FAFC]">
+                {/* Razorpay-Style Sticky Subheader */}
+                <div className="bg-white border-b border-[#E2E8F0] px-4 sm:px-8 py-6 sticky top-0 z-20">
+                    <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                                <span>Dashboard</span>
+                                <ChevronRight size={12} strokeWidth={3} className="text-[#CBD5E1]" />
+                                <span className="text-[#012652]">Onboarding</span>
+                            </div>
+                            <h1 className="text-2xl font-bold text-[#012652]">Organization Activation</h1>
+                        </div>
+                        
+                        <div className="flex items-center gap-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-6 py-3">
+                            <div className="space-y-1">
+                                <div className="flex justify-between items-center w-48">
+                                    <span className="text-[10px] font-bold text-[#64748B] uppercase">Setup Progress</span>
+                                    <span className="text-[10px] font-bold text-[#0D94FB]">{progress}%</span>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1 INR to {fx.code}</p>
-                                    <p className="text-xl font-black text-slate-800 tracking-tight">{fx.rate}</p>
+                                <div className="h-1.5 w-48 bg-[#E2E8F0] rounded-full overflow-hidden">
+                                    <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progress}%` }}
+                                        transition={{ duration: 1, ease: "easeOut" }}
+                                        className="h-full bg-[#0D94FB]"
+                                    />
                                 </div>
                             </div>
+                            <div className="h-8 w-[1px] bg-[#E2E8F0]"></div>
                             <div className="text-right">
-                                <span className={`text-[10px] font-black px-2 py-1 rounded-md ${fx.trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                                    {fx.trend}
-                                </span>
+                                <p className="text-[10px] font-bold text-[#64748B] uppercase">Steps Completed</p>
+                                <p className="text-sm font-bold text-[#012652]">{Math.min(7, currentStep - 1)} of 7</p>
                             </div>
-                        </motion.div>
-                    ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Setup Checklist */}
-                <div className="premium-card bg-white/70 backdrop-blur-xl border-slate-100/50 shadow-2xl shadow-slate-200/40 relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-
-                    <div className="divide-y divide-slate-100/50">
-                        {SETUP_STEPS.map((section, idx) => (
-                            <div key={idx} className="p-12">
-                                <div className="flex items-center justify-between mb-10">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                                            <BarChart3 size={20} className="text-[#64748B]" />
+                <div className="max-w-6xl mx-auto px-4 sm:px-8 py-10 space-y-10">
+                    {/* Razorpay-Style Task List */}
+                    <div className="space-y-6">
+                                {SETUP_STEPS.map((section, idx) => (
+                                    <div key={idx} className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-[11px] font-bold text-[#64748B] uppercase tracking-[0.15em]">{section.category}</h3>
+                                            <div className="h-[1px] flex-1 bg-[#E2E8F0]"></div>
                                         </div>
-                                        <h3 className="text-[12px] font-black uppercase tracking-[0.25em] text-[#64748B]">{section.category}</h3>
+                                        <div className="bg-white border border-[#E2E8F0] rounded-lg overflow-hidden divide-y divide-[#E2E8F0] shadow-sm">
+                                            {section.steps.map((stepData: any) => {
+                                                const step = steps.find(s => s.category === section.category)?.steps.find(s => s.id === stepData.id) as any;
+                                                if (!step) return null;
+
+                                                const isCompleted = step.status === 'completed';
+                                                const isActive = step.status === 'active';
+                                                const isLocked = step.status === 'locked';
+
+                                                return (
+                                                    <div 
+                                                        key={step.id} 
+                                                        onClick={() => isActive && handleStepClick(step.id)}
+                                                        className={`group flex items-center gap-6 p-5 transition-colors ${
+                                                            isActive ? "hover:bg-[#F8FAFC] cursor-pointer" : "bg-white"
+                                                        } ${isCompleted ? "opacity-75" : ""}`}
+                                                    >
+                                                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold border transition-colors ${
+                                                            isCompleted 
+                                                            ? "bg-[#10B981] text-white border-[#10B981]" 
+                                                            : isActive 
+                                                            ? "bg-[#012652] text-white border-[#012652]" 
+                                                            : "bg-white text-[#CBD5E1] border-[#E2E8F0]"
+                                                        }`}>
+                                                            {isCompleted ? <CheckCircle2 size={14} /> : step.id}
+                                                        </div>
+
+                                                        <div className="flex-1 space-y-1">
+                                                            <div className="flex items-center gap-3">
+                                                                <h4 className={`text-sm font-bold ${isLocked ? "text-[#94A3B8]" : "text-[#012652]"} ${isCompleted ? "line-through text-[#94A3B8]" : ""}`}>
+                                                                    {step.title}
+                                                                </h4>
+                                                                {isActive && (
+                                                                    <span className="px-2 py-0.5 rounded bg-[#0D94FB]/10 text-[#0D94FB] text-[9px] font-bold uppercase tracking-wider">
+                                                                        Continue
+                                                                    </span>
+                                                                )}
+                                                                {isCompleted && (
+                                                                    <span className="px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] text-[9px] font-bold uppercase tracking-wider">
+                                                                        Done
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className={`text-[12px] font-medium leading-normal ${isLocked || isCompleted ? "text-[#CBD5E1]" : "text-[#64748B]"}`}>
+                                                                {step.summary || step.description}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-8 text-right shrink-0">
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-[10px] font-bold text-[#CBD5E1] uppercase tracking-wider">Estimated Time</p>
+                                                                <div className="flex items-center justify-end gap-1.5 text-[12px] font-bold text-[#64748B]">
+                                                                    <Clock size={12} />
+                                                                    {step.duration}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="w-10 flex justify-center">
+                                                                {isLocked ? (
+                                                                    <Lock size={16} className="text-[#CBD5E1]" />
+                                                                ) : isCompleted ? (
+                                                                    <CheckCircle2 size={20} className="text-[#10B981]" />
+                                                                ) : (
+                                                                    <ChevronRight size={20} className="text-[#0D94FB] group-hover:translate-x-1 transition-transform" />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full text-[11px] font-black text-[#475569] border border-slate-100">
-                                        <Clock size={16} />
-                                        <span>EST. {section.duration.toUpperCase()}</span>
-                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Industrial Utility Callout: Accountant Delegation */}
+                            <div className="bg-[#012652] rounded-lg p-10 flex flex-col md:flex-row items-center gap-10 shadow-lg relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-48 h-full bg-white/5 skew-x-[-20deg] -mr-24 transform origin-right"></div>
+                                
+                                <div className="shrink-0 w-20 h-20 rounded-2xl bg-[#0D94FB] flex items-center justify-center text-white shadow-xl shadow-[#0D94FB]/20 relative z-10">
+                                    <Shield size={40} />
                                 </div>
 
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    {section.steps.map((step, sIdx) => {
-                                        const isLocked = step.status === 'locked';
-                                        return (
-                                            <motion.div
-                                                key={sIdx}
-                                                whileHover={!isLocked ? { y: -5 } : {}}
-                                                className={`group flex items-center justify-between p-8 rounded-[2rem] border transition-all relative overflow-hidden ${!isLocked
-                                                    ? 'bg-white border-primary/20 shadow-premium cursor-pointer'
-                                                    : 'bg-slate-50/50 border-slate-100 grayscale hover:grayscale-0 transition-all duration-700'
-                                                    }`}
-                                            >
-                                                {!isLocked && <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity"></div>}
+                                <div className="flex-1 space-y-4 relative z-10">
+                                    <div className="inline-block px-3 py-1 rounded-md bg-[#0D94FB]/20 border border-[#0D94FB]/30 text-[#0D94FB] text-[10px] font-bold uppercase tracking-widest">
+                                        Expert Assistance
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">Delegated Compliance Setup</h2>
+                                    <p className="text-blue-100/60 text-sm font-medium leading-relaxed max-w-xl">
+                                        Invite your Chartered Accountant or Finance Lead to finalize statutory registrations and tax mandates. 
+                                        <span className="text-[#0D94FB] font-bold ml-1">Secure restricted access implementation.</span>
+                                    </p>
+                                </div>
 
-                                                <div className="flex items-center gap-8 relative z-10">
-                                                    <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-black text-sm italic transition-all ${!isLocked
-                                                        ? 'bg-primary/5 border-primary/10 text-primary shadow-sm'
-                                                        : 'bg-white border-slate-200 text-slate-300'}`}>
-                                                        {idx * 2 + sIdx + 1}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-black text-[#0F172A] group-hover:text-primary transition-colors">{step.title}</h4>
-                                                        <p className="text-[13px] text-[#475569] mt-2 font-medium leading-relaxed max-w-[240px]">{step.description}</p>
-                                                    </div>
-                                                </div>
-
-                                                {!isLocked ? (
-                                                    <div className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                                                        <ArrowRight size={20} />
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
-                                                        <Lock size={20} />
-                                                    </div>
-                                                )}
-                                            </motion.div>
-                                        );
-                                    })}
+                                <div className="shrink-0 relative z-10 w-full md:w-auto">
+                                    <motion.button 
+                                        whileHover={{ backgroundColor: "#0D94FB", scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setIsInviteModalOpen(true)}
+                                        className="w-full md:w-auto bg-white text-[#012652] px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg hover:text-white transition-all"
+                                    >
+                                        <UserPlus size={18} />
+                                        Invite Delegate
+                                    </motion.button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
 
-                    <div className="bg-slate-50/50 p-8 flex items-center justify-center gap-4 text-[#64748B] group cursor-pointer hover:text-primary transition-all border-t border-slate-100">
-                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100 group-hover:border-primary/20 group-hover:bg-primary/5 transition-all">
-                            <HelpCircle size={22} className="group-hover:scale-110 transition-transform" />
-                        </div>
-                        <span className="text-sm font-black uppercase tracking-widest">Need expert setup help?</span>
-                        <div className="flex items-center gap-2 text-primary font-black ml-4 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
-                            <span>Book Session</span>
-                            <ArrowUpRight size={18} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Accountant Invitation */}
-                <div className="premium-card bg-[#04050a] p-16 md:p-20 relative overflow-hidden group border-white/5">
-                    <div className="absolute top-0 right-0 w-[60%] h-full bg-primary/10 rounded-full blur-[150px] -mr-20 -mt-20 group-hover:bg-primary/20 transition-all duration-1000"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px] -ml-20 -mb-20"></div>
-
-                    <div className="relative z-10 flex flex-col xl:flex-row items-center justify-between gap-16">
-                        <div className="text-center xl:text-left max-w-3xl space-y-6">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/50 text-[10px] font-black uppercase tracking-widest"
-                            >
-                                Speed Up Setup
-                            </motion.div>
-                            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">Setup your account 3x faster by inviting your <span className="text-primary italic">Auditor.</span></h2>
-                            <p className="text-white/40 font-bold text-lg leading-relaxed">Let your account managers handle the technical legalities. Your CA can configure compliance, taxations, and payroll structures effortlessly.</p>
+                    {/* Razorpay-Style Support Section */}
+                    <div className="pt-12 border-t border-[#E2E8F0] flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div className="flex items-center gap-6">
+                            <div className="w-12 h-12 bg-white border border-[#E2E8F0] rounded-lg flex items-center justify-center text-[#64748B] shadow-sm">
+                                <HelpCircle size={24} />
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-bold text-[#012652]">Product Support Command</p>
+                                <p className="text-[12px] font-medium text-[#64748B]">Resolution in &lt; 24h • Mon-Fri 09:00 - 18:00 IST</p>
+                            </div>
                         </div>
 
-                        <div className="shrink-0">
-                            <button className="group relative bg-white text-[#04050a] px-14 py-7 rounded-[2rem] font-black text-xl shadow-[0_25px_50px_-12px_rgba(255,255,255,0.15)] hover:bg-slate-50 active:scale-95 transition-all flex items-center gap-4 overflow-hidden">
-                                <span className="relative z-10">Invite Delegate</span>
-                                <UserPlus size={24} className="relative z-10 group-hover:scale-125 transition-transform" />
-                                <div className="absolute inset-0 bg-primary/5 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
-                            </button>
+                        <div className="flex items-center gap-6">
+                            {(['Docs', 'Pricing', 'Security', 'Compliance'] as ResourceTab[]).map((tab) => (
+                                <button
+                                    key={tab} 
+                                    onClick={() => openResource(tab)}
+                                    className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest hover:text-[#0D94FB] transition-colors"
+                                >
+                                    {tab}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -238,6 +559,3 @@ export default function DashboardOverview() {
         </DashboardLayout>
     );
 }
-
-
-// Removed redundant HelpCircle function

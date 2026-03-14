@@ -28,4 +28,23 @@ export class WalletController {
     const orgId = req.user.orgs[0].orgId;
     return this.walletService.getTransactions(orgId);
   }
+
+  @Post('bulk-payout')
+  async bulkPayout(
+    @Req() req: AuthenticatedRequest,
+    @Body()
+    body: {
+      type: string;
+      payouts: { id: string; amount: number }[];
+      mode: string;
+    },
+  ) {
+    const orgId = req.user.orgs[0].orgId;
+    return this.walletService.processBulkPayoutSimulation(
+      orgId,
+      body.payouts,
+      body.type,
+      body.mode,
+    );
+  }
 }

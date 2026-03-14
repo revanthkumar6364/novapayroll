@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
     Shield, Lock, Eye, EyeOff, 
@@ -24,6 +24,34 @@ export default function CorporateCards() {
     const [cards, setCards] = useState<CorporateCard[]>([]);
     const [isCardVisible, setIsCardVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isOrderingPhysical, setIsOrderingPhysical] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState<any>(null);
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [newPin, setNewPin] = useState("");
+
+    const handleOrderPhysical = async (cardId: string) => {
+        setIsOrderingPhysical(true);
+        try {
+            const res = await api.post(`/corporate-cards/${cardId}/request-physical`, { address: "Main Office, Bangalore" });
+            setOrderSuccess(res);
+            setTimeout(() => setOrderSuccess(null), 5000);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsOrderingPhysical(false);
+        }
+    };
+
+    const handleSetPin = async (cardId: string) => {
+        try {
+            await api.post(`/corporate-cards/${cardId}/set-pin`, { pinHash: newPin });
+            setIsPinModalOpen(false);
+            setNewPin("");
+            alert("PIN updated successfully");
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     useEffect(() => {
         const fetchCards = async () => {
@@ -189,10 +217,14 @@ export default function CorporateCards() {
                                 <div className="space-y-2">
                                     {[
                                         { label: "Update Limit", icon: TrendingUp },
-                                        { label: "Card Settings", icon: Settings },
+                                        { label: "Request Physical Card", icon: Globe, action: () => handleOrderPhysical(selectedCard?.id) },
+                                        { label: "Set Card PIN", icon: Shield, action: () => setIsPinModalOpen(true) },
                                         { label: "Freeze Card", icon: Lock, danger: true }
                                     ].map((item, idx) => (
-                                        <button key={idx} className={`w-full p-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-between group transition-all ${
+                                        <button 
+                                            key={idx} 
+                                            onClick={item.action}
+                                            className={`w-full p-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-between group transition-all ${
                                             item.danger ? 'bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white' : 'bg-slate-50 text-slate-500 hover:bg-primary/5 hover:text-primary'
                                         }`}>
                                             <span className="flex items-center gap-3">
@@ -205,6 +237,16 @@ export default function CorporateCards() {
                                 </div>
                             </div>
 
+                            {orderSuccess && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700 text-[10px] font-bold"
+                                >
+                                    Physical Card Dispatched! Tracking: {orderSuccess.trackingId}. Est. Delivery: {orderSuccess.estimatedDelivery}
+                                </motion.div>
+                            )}
+
                             <div className="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 relative overflow-hidden">
                                 <Shield className="absolute bottom-[-10px] right-[-10px] text-indigo-200/50" size={80} />
                                 <h4 className="text-sm font-black text-indigo-900 tracking-tight mb-2 relative z-10">Purchase Protection</h4>
@@ -214,6 +256,71 @@ export default function CorporateCards() {
                     </div>
                 </div>
             </div>
+
+            {/* PIN Setup Modal */}
+            <AnimatePresence>
+                {isPinModalOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-md z-[300] flex items-center justify-center p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="bg-white rounded-[3rem] w-full max-w-md p-12 text-center space-y-8 shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-indigo-600"></div>
+                            <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 mx-auto">
+                                <Shield size={32} />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-[#0F172A] tracking-tight">Secure PIN Setup</h3>
+                                <p className="text-sm font-bold text-slate-400 px-4">Set a 4-digit PIN for your physical Nova Corporate Card.</p>
+                            </div>
+                            
+                            <div className="flex justify-center gap-4">
+                                {[1,2,3,4].map((i) => (
+                                    <input 
+                                        key={i}
+                                        type="password"
+                                        maxLength={1}
+                                        value={newPin[i-1] || ""}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val.length === 1) {
+                                                setNewPin(prev => prev + val);
+                                            } else if (val === "") {
+                                                setNewPin(prev => prev.slice(0, -1));
+                                            }
+                                        }}
+                                        className="w-14 h-14 bg-slate-50 border-2 border-slate-100 rounded-2xl text-center text-2xl font-black text-[#0F172A] focus:border-primary focus:bg-white transition-all outline-none"
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="space-y-3 pt-4">
+                                <button 
+                                    onClick={() => handleSetPin(selectedCard?.id)}
+                                    className="w-full premium-button py-4 rounded-2xl bg-primary text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all"
+                                >
+                                    Confirm Secure PIN
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        setIsPinModalOpen(false);
+                                        setNewPin("");
+                                    }}
+                                    className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
+                                >
+                                    Cancel Request
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <style jsx>{`
                 .perspective-1000 {

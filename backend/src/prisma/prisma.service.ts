@@ -44,6 +44,11 @@ export class PrismaService
               'VendorPayoutBatch',
             ];
 
+            const typedArgs = args as {
+              where?: Record<string, any>;
+              data?: Record<string, any> | any[];
+            };
+
             if (tenantModels.includes(model) && tenantId) {
               if (
                 [
@@ -57,30 +62,28 @@ export class PrismaService
                 ].includes(operation)
               ) {
                 // Inject orgId into where clause
-                (args as any).where = {
-                  ...(args as any).where,
+                typedArgs.where = {
+                  ...typedArgs.where,
                   orgId: tenantId,
                 };
               }
               if (['create', 'createMany'].includes(operation)) {
                 // Inject orgId into data
                 if (operation === 'create') {
-                  (args as any).data = {
-                    ...(args as any).data,
+                  typedArgs.data = {
+                    ...(typedArgs.data as Record<string, any>),
                     orgId: tenantId,
                   };
-                } else {
-                  (args as any).data = ((args as any).data as any[]).map(
-                    (item) => ({
-                      ...item,
-                      orgId: tenantId,
-                    }),
-                  );
+                } else if (Array.isArray(typedArgs.data)) {
+                  typedArgs.data = typedArgs.data.map((item) => ({
+                    ...item,
+                    orgId: tenantId,
+                  }));
                 }
               }
             }
 
-            return query(args);
+            return query(args) as Promise<any>;
           },
         },
       },

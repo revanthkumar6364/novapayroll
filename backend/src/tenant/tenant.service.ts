@@ -13,7 +13,7 @@ export class TenantService {
     return TenantService.storage.getStore();
   }
 
-  runWithTenant(orgId: string, callback: () => any) {
+  runWithTenant<T>(orgId: string, callback: () => T): T {
     return TenantService.storage.run(orgId, callback);
   }
 }

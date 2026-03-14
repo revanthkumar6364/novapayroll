@@ -1,5 +1,7 @@
+import { Request } from 'express';
+
 export interface AuthenticatedUser {
-  userId: string;
+  id: string;
   email: string;
   orgs: {
     orgId: string;

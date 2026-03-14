@@ -1,6 +1,5 @@
 "use client";
-
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
     ArrowUpRight, ArrowDownLeft, 
@@ -12,7 +11,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { 
     X, Check, Users, Landmark as BankIcon,
-    ChevronRight, ArrowRight, Wallet,
+    ChevronRight, Wallet,
     CheckCircle2
 } from "lucide-react";
 
@@ -48,6 +47,20 @@ export default function BankingHub() {
     const [selectedTargets, setSelectedTargets] = useState<{ id: string; amount: number; name: string }[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isLiveMode, setIsLiveMode] = useState(false);
+    const [isConnectingBank, setIsConnectingBank] = useState(false);
+
+    const toggleLiveMode = async () => {
+        if (!isLiveMode) {
+            setIsConnectingBank(true);
+            // Simulate deep infrastructure handshake
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            setIsLiveMode(true);
+            setIsConnectingBank(false);
+        } else {
+            setIsLiveMode(false);
+        }
+    };
 
     const fetchBankingData = async () => {
         try {
@@ -78,7 +91,7 @@ export default function BankingHub() {
         setPayoutType(type);
         setWizardStep(2);
         try {
-            const endpoint = type === 'VENDOR' ? '/vendor' : '/employee'; // Simplified endpoint
+            const endpoint = type === 'VENDOR' ? '/vendors' : '/employees'; // Corrected endpoint if needed, but keeping consistency
             const res = await api.get(endpoint);
             const targets = res.data.map((item: any) => ({
                 id: item.id,
@@ -110,11 +123,11 @@ export default function BankingHub() {
         setIsProcessing(true);
         try {
             if (payoutType === 'VENDOR') {
-                await api.post('/vendor/bulk-payment', selectedTargets.map(t => ({
-                    vendorId: t.id,
-                    amount: t.amount,
-                    remarks: "Bulk settlement via Payout Wizard"
-                })));
+                await api.post('/wallet/bulk-payout', {
+                    type: 'VENDOR',
+                    payouts: selectedTargets.map(t => ({ id: t.id, amount: t.amount })),
+                    mode: isLiveMode ? 'PRODUCTION' : 'SANDBOX'
+                });
             }
             setIsSuccess(true);
             setTimeout(() => {
@@ -145,7 +158,26 @@ export default function BankingHub() {
                         <p className="text-slate-500 font-bold text-lg">Centralized capital management and instant vendor & payroll settlements.</p>
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
+                        {/* Live Mode Toggle */}
+                        <div className="flex items-center gap-3 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+                            <button 
+                                onClick={toggleLiveMode}
+                                disabled={isConnectingBank}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${!isLiveMode ? 'bg-white text-slate-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                Sandbox
+                            </button>
+                            <button 
+                                onClick={toggleLiveMode}
+                                disabled={isConnectingBank}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${isLiveMode ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                {isConnectingBank ? <RefreshCw size={12} className="animate-spin" /> : <div className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-white animate-pulse' : 'bg-slate-300'}`} />}
+                                Live Mode
+                            </button>
+                        </div>
+
                         <button className="premium-button-secondary px-6 py-3 rounded-2xl flex items-center gap-2 group">
                             <RefreshCw size={18} className="text-slate-400 group-active:animate-spin transition-all" />
                             <span className="font-black text-[11px] uppercase tracking-widest text-[#64748B]">Refresh Ledger</span>

@@ -50,36 +50,40 @@ export class PayoutService {
       include: { items: true },
     });
 
-    // 3. Simulate Async Bank Processing
-    this.simulateBankTransfer(batch.id);
+    // 3. Simulate Async Bank Processing (Background)
+    void this.simulateBankTransfer(batch.id);
 
     return batch;
   }
 
-  private async simulateBankTransfer(batchId: string) {
+  private simulateBankTransfer(batchId: string) {
     // AI logic: Artificial delay to simulate banking rails
-    setTimeout(async () => {
-      try {
-        // Bulk update items to SUCCESS
-        await this.prisma.payoutItem.updateMany({
-          where: { batchId },
-          data: {
-            status: PayoutStatus.SUCCESS,
-            externalId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}`,
-          },
-        });
+    // Use a standard function to avoid 'async without await' warning
+    setTimeout(() => {
+      // Use IIFE to handle async logic inside setTimeout
+      void (async () => {
+        try {
+          // Bulk update items to SUCCESS
+          await this.prisma.payoutItem.updateMany({
+            where: { batchId },
+            data: {
+              status: PayoutStatus.SUCCESS,
+              externalId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}`,
+            },
+          });
 
-        // Update batch status
-        await this.prisma.payoutBatch.update({
-          where: { id: batchId },
-          data: {
-            status: PayoutStatus.SUCCESS,
-            externalBatchId: `B-${Date.now()}`,
-          },
-        });
-      } catch (error) {
-        console.error('Payout simulation failed:', error);
-      }
+          // Update batch status
+          await this.prisma.payoutBatch.update({
+            where: { id: batchId },
+            data: {
+              status: PayoutStatus.SUCCESS,
+              externalBatchId: `B-${Date.now()}`,
+            },
+          });
+        } catch (error) {
+          console.error('Payout simulation failed:', error);
+        }
+      })();
     }, 5000); // 5 second delay for "Elite" feel
   }
 

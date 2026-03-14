@@ -7,13 +7,13 @@ import { Queue } from 'bullmq';
 export class NotificationService {
   constructor(
     private prisma: PrismaService,
-    @InjectQueue('notifications') private readonly notificationQueue: any,
+    @InjectQueue('notifications') private readonly notificationQueue: Queue,
   ) {}
 
   async queueNotification(
     userId: string,
     template: string,
-    payload: any,
+    payload: Record<string, any>,
     orgId?: string,
   ) {
     // 1. Get user preferences
@@ -47,6 +47,6 @@ export class NotificationService {
       },
     );
 
-    return outbox as any;
+    return outbox;
   }
 }

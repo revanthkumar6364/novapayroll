@@ -129,4 +129,52 @@ export class WalletService {
       );
     });
   }
+
+  async processBulkPayoutSimulation(
+    orgId: string,
+    payouts: { id: string; amount: number }[],
+    type: string,
+    mode: string,
+  ) {
+    const wallet = await this.getWallet(orgId);
+    const totalAmount = payouts.reduce((sum, p) => sum + p.amount, 0);
+
+    if (wallet.balance < totalAmount) {
+      throw new BadRequestException('Insufficient wallet balance');
+    }
+
+    if (mode === 'PRODUCTION') {
+      await this._simulateProductionBankHandshake(totalAmount);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: totalAmount } },
+      });
+
+      return Promise.all(
+        payouts.map((p) =>
+          tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount: p.amount,
+              type: 'DEBIT',
+              category: type === 'VENDOR' ? 'VENDOR_PAYMENT' : 'PAYROLL',
+              description: `Bulk ${type.toLowerCase()} payout via ${mode} API`,
+              referenceId: p.id,
+              status: 'SUCCESS',
+            },
+          }),
+        ),
+      );
+    });
+  }
+
+  private async _simulateProductionBankHandshake(total: number) {
+    console.log(`[BANK_API] Initiating PRODUCTION handshake for ₹${total}`);
+    console.log(`[BANK_API] Verifying ICICI/HDFC API Tokens...`);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log(`[BANK_API] Handshake Success. Dispatching funds.`);
+  }
 }

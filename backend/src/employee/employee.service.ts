@@ -41,12 +41,16 @@ export class EmployeeService {
     return employee;
   }
 
-  async updateEmployee(orgId: string, id: string, dto: any) {
+  async updateEmployee(
+    orgId: string,
+    id: string,
+    dto: Partial<CreateEmployeeDto>,
+  ) {
     return this.prisma.employee.update({
       where: { id },
       data: {
         ...dto,
-      },
+      } as any, // Cast to any to avoid complex deep-mapped issues with Partial while maintaining DTO contract
     });
   }
 }

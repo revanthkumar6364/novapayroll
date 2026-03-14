@@ -13,7 +13,7 @@ import { TaxService } from './tax.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { Role, DeclarationStatus } from '@prisma/client';
+import { Role, DeclarationStatus, TaxRegime } from '@prisma/client';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
 @Controller('tax')
@@ -28,16 +28,16 @@ export class TaxController {
   ) {
     // In a real app, we'd find the employeeId linked to the user
     // For now, we assume the user has an associated employee
-    const employeeId = req.user.userId;
+    const employeeId = req.user.id;
     return this.taxService.getEmployeeDeclaration(employeeId, parseInt(year));
   }
 
   @Post('declaration')
   async updateMyDeclaration(
     @Req() req: AuthenticatedRequest,
-    @Body() dto: any,
+    @Body() dto: { regime: TaxRegime; investments80C: number; investments80D: number; hraAmount: number; otherIncome: number; year: number },
   ) {
-    const employeeId = req.user.userId;
+    const employeeId = req.user.id;
     return this.taxService.createOrUpdateDeclaration(employeeId, dto);
   }
 
@@ -47,7 +47,10 @@ export class TaxController {
   }
 
   @Post('declaration/:id/proof')
-  async addProof(@Param('id') id: string, @Body() dto: any) {
+  async addProof(
+    @Param('id') id: string,
+    @Body() dto: { category: string; fileName: string; fileUrl: string; amount: number },
+  ) {
     return this.taxService.addProof(id, dto);
   }
 

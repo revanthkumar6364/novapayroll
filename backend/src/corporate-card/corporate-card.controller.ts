@@ -16,7 +16,6 @@ import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-requ
 export class CorporateCardController {
   constructor(private readonly cardService: CorporateCardService) {}
 
-  @Get()
   async getCards(@Req() req: AuthenticatedRequest) {
     const orgId = req.user.orgs[0].orgId;
     return this.cardService.getCards(orgId);
@@ -37,7 +36,7 @@ export class CorporateCardController {
 
   @Get('my-card')
   async getMyCard(@Req() req: AuthenticatedRequest) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     // Note: This needs logic to find employeeId from userId
     // For now, assume it's fetched correctly
     return this.cardService.getEmployeeCard(userId);
@@ -46,5 +45,18 @@ export class CorporateCardController {
   @Post(':id/deactivate')
   async deactivate(@Param('id') id: string) {
     return this.cardService.deactivateCard(id);
+  }
+
+  @Post(':id/request-physical')
+  async requestPhysicalCard(
+    @Param('id') cardId: string,
+    @Body() body: { address: string },
+  ) {
+    return this.cardService.requestPhysicalCard(cardId, body.address);
+  }
+
+  @Post(':id/set-pin')
+  async setPin(@Param('id') cardId: string, @Body() body: { pinHash: string }) {
+    return this.cardService.setCardPin(cardId, body.pinHash);
   }
 }

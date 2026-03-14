@@ -34,7 +34,7 @@ export class OrgController {
   @Post(':orgId/setup/step')
   saveStep(
     @Param('orgId') orgId: string,
-    @Body() body: { step: number; data: any },
+    @Body() body: { step: number; data: Record<string, any> },
   ) {
     return this.orgService.saveWizardStep(orgId, body.step, body.data);
   }

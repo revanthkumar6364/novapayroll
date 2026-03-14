@@ -12,6 +12,7 @@ import {
 import { ReimbursementService } from './reimbursement.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+import { Status } from '@prisma/client';
 
 interface ReimbursementRequestDto {
   employeeId: string;
@@ -49,7 +50,7 @@ export class ReimbursementController {
   async updateStatus(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body('status') status: string,
+    @Body('status') status: Status,
   ) {
     const orgId = req.user.orgs[0].orgId;
     return this.reimbursementService.updateStatus(orgId, id, status);

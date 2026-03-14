@@ -27,18 +27,16 @@ export class OrgService {
   }
 
   async updateSetup(orgId: string, dto: OrgSetupDto) {
-    const settings = dto.payrollSettings;
-    const statutory = dto.statutoryConfig;
-
-    const data: any = {
-      isSetupComplete: dto.isSetupComplete,
-      payrollSettings: settings || undefined,
-      statutoryConfig: statutory || undefined,
-    } as any;
+    const settings = dto.payrollSettings as unknown as Record<string, any>;
+    const statutory = dto.statutoryConfig as unknown as Record<string, any>;
 
     return this.prisma.org.update({
       where: { id: orgId },
-      data,
+      data: {
+        isSetupComplete: dto.isSetupComplete,
+        payrollSettings: settings || undefined,
+        statutoryConfig: statutory || undefined,
+      },
     });
   }
 
@@ -52,20 +50,23 @@ export class OrgService {
     if (payrollSettings && statutoryConfig) {
       await this.prisma.org.update({
         where: { id: orgId },
-        data: { isSetupComplete: true } as any,
+        data: { isSetupComplete: true },
       });
     }
   }
 
-  async saveWizardStep(orgId: string, step: number, data: any) {
+  async saveWizardStep(orgId: string, step: number, data: Record<string, any>) {
     const org = await this.getOrg(orgId);
 
-    const updateData: any = { onboardingStep: step };
+    const updateData: Record<string, any> = { onboardingStep: step };
 
     if (step === 2) updateData.payrollSettings = data;
     if (step === 3) updateData.statutoryConfig = data;
     if (step === 4)
-      updateData.payrollSettings = { ...(org.payrollSettings as any), ...data }; // Multi-part setups
+      updateData.payrollSettings = {
+        ...(org.payrollSettings as unknown as Record<string, any>),
+        ...data,
+      };
 
     return this.prisma.org.update({
       where: { id: orgId },

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TaxRegime, DeclarationStatus } from '@prisma/client';
 
@@ -100,7 +96,17 @@ export class TaxService {
    */
   calculateTaxableIncome(
     monthlyGross: number,
-    declaration?: any,
+    declaration?: {
+      regime: TaxRegime;
+      investments80C: number;
+      investments80D: number;
+      hraAmount: number;
+      proofs?: {
+        category: string;
+        status: DeclarationStatus;
+        amount: number;
+      }[];
+    },
     useOnlyVerified = false,
   ) {
     if (!declaration) return monthlyGross * 12;
@@ -116,24 +122,24 @@ export class TaxService {
       if (useOnlyVerified && declaration.proofs) {
         investments80C = declaration.proofs
           .filter(
-            (p: any) =>
+            (p) =>
               p.category === '80C' && p.status === DeclarationStatus.VERIFIED,
           )
-          .reduce((sum: number, p: any) => sum + p.amount, 0);
+          .reduce((sum, p) => sum + p.amount, 0);
 
         investments80D = declaration.proofs
           .filter(
-            (p: any) =>
+            (p) =>
               p.category === '80D' && p.status === DeclarationStatus.VERIFIED,
           )
-          .reduce((sum: number, p: any) => sum + p.amount, 0);
+          .reduce((sum, p) => sum + p.amount, 0);
 
         hraAmount = declaration.proofs
           .filter(
-            (p: any) =>
+            (p) =>
               p.category === 'HRA' && p.status === DeclarationStatus.VERIFIED,
           )
-          .reduce((sum: number, p: any) => sum + p.amount, 0);
+          .reduce((sum, p) => sum + p.amount, 0);
       }
 
       const deductions =

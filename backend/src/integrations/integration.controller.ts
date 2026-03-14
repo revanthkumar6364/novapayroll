@@ -29,9 +29,10 @@ export class IntegrationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN_FINANCE)
   async triggerSync(
+    @Req() _req: AuthenticatedRequest,
     @Query('orgId') orgId: string,
     @Param('type') type: 'ZOHO' | 'TALLY',
-    @Body() data: any,
+    @Body() data: { items: any[] },
   ) {
     return this.integrationService.syncToAccounting(orgId, type, data);
   }
@@ -44,7 +45,7 @@ export class IntegrationController {
   async atsWebhook(
     @Param('orgId') orgId: string,
     @Query('source') source: string,
-    @Body() payload: any,
+    @Body() payload: { candidate: { first_name: string; last_name: string; email: string; start_date?: string } },
   ) {
     return this.integrationService.handleATSWebhook(orgId, source, payload);
   }

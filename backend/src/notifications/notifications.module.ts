@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
 import { NotificationService } from './notification.service';
 import { SmsService } from './sms.service';
 import { WebhookService } from './webhook.service';
@@ -13,7 +12,9 @@ import { WebhookService } from './webhook.service';
     {
       provide: 'BullQueue_notifications',
       useValue: {
-        add: async () => ({ id: 'mock-id' }),
+        add: async () => {
+          return await Promise.resolve({ id: 'mock-id' });
+        },
         process: async () => {},
         on: () => {},
       },

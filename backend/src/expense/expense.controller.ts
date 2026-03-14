@@ -28,19 +28,19 @@ export class ExpenseController {
     @Body() body: { amount: number; description: string },
   ) {
     const orgId = req.user.orgs[0].orgId;
-    const employeeId = req.user.userId; // Correct lookup needed in real scenario
+    const employeeId = req.user.id; // Correct lookup needed in real scenario
     return this.expenseService.createRequest(orgId, employeeId, body);
   }
 
   @Post(':id/approve')
   async approve(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const orgId = req.user.orgs[0].orgId;
-    return this.expenseService.approveRequest(req.user.userId, orgId, id);
+    return this.expenseService.approveRequest(req.user.id, orgId, id);
   }
 
   @Get('my-requests')
   async getMyRequests(@Req() req: AuthenticatedRequest) {
     // Correct lookup needed in real scenario
-    return this.expenseService.getMyRequests(req.user.userId);
+    return this.expenseService.getMyRequests(req.user.id);
   }
 }

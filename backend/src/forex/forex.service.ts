@@ -2,10 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+export interface RateMap {
+  [key: string]: number;
+}
+
+interface ExchangeRateResponse {
+  rates: RateMap;
+}
+
 @Injectable()
 export class ForexService {
   private readonly logger = new Logger(ForexService.name);
-  private cache: { rates: any; timestamp: number } | null = null;
+  private cache: { rates: RateMap; timestamp: number } | null = null;
   private readonly CACHE_TTL = 3600000; // 1 hour
 
   constructor(private readonly httpService: HttpService) {}
@@ -19,11 +27,12 @@ export class ForexService {
 
     try {
       this.logger.log(`Fetching latest rates for ${base}...`);
-      const { data } = await firstValueFrom(
-        this.httpService.get(
+      const response = await firstValueFrom(
+        this.httpService.get<ExchangeRateResponse>(
           `https://api.exchangerate-api.com/v4/latest/${base}`,
         ),
       );
+      const data = response.data;
 
       this.cache = {
         rates: data.rates,
@@ -31,8 +40,11 @@ export class ForexService {
       };
 
       return data.rates;
-    } catch (error) {
-      this.logger.error('Failed to fetch exchange rates', error.stack);
+    } catch (error: any) {
+      this.logger.error(
+        'Failed to fetch exchange rates',
+        (error as Error).stack,
+      );
       // Fallback rates if API is down
       return {
         USD: 0.012,

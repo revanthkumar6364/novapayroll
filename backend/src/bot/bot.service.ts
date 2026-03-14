@@ -1,13 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+interface BotPayload {
+  from?: string;
+  user?: string;
+  type?: string;
+  text?: string;
+  mediaUrl?: string;
+  attachments?: any[];
+}
+
 @Injectable()
 export class BotService {
   private readonly logger = new Logger(BotService.name);
 
   constructor(private prisma: PrismaService) {}
 
-  async processIncomingMessage(provider: 'whatsapp' | 'slack', payload: any) {
+  async processIncomingMessage(
+    provider: 'whatsapp' | 'slack',
+    payload: BotPayload,
+  ) {
     this.logger.log(
       `Processing ${provider} message: ${JSON.stringify(payload)}`,
     );
@@ -26,7 +38,8 @@ export class BotService {
 
     // 2. Simulate AI Vision Parsing (Gemini Vision)
     // In a real implementation, we would send the attachment URL to a Vision API
-    const isImage = payload.type === 'image' || payload.attachments?.length > 0;
+    const isImage =
+      payload.type === 'image' || (payload.attachments?.length ?? 0) > 0;
 
     if (isImage) {
       this.logger.log('Receipt image detected. Initiating AI Extraction...');
@@ -35,7 +48,7 @@ export class BotService {
       const extractedData = await this.simulateAIExtraction();
 
       // 3. Create Reimbursement Request
-      const request = await this.prisma.reimbursementRequest.create({
+      await this.prisma.reimbursementRequest.create({
         data: {
           orgId: employee.orgId,
           employeeId: employee.id,
@@ -100,12 +113,12 @@ export class BotService {
       };
     }
 
-    return {
+    return Promise.resolve({
       message:
         "I understand you're asking about " +
         text +
         '. I can help you with vendor payouts, payroll processing, and compliance reporting. Which area should we look into first?',
-    };
+    });
   }
 
   private async simulateAIExtraction() {

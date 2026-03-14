@@ -7,14 +7,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+
 @Injectable()
 export class TenantGuard implements CanActivate {
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
-    const orgId = request.headers['x-org-id'];
+    const orgId = request.headers['x-org-id'] as string;
 
     if (!orgId) {
       throw new UnauthorizedException('X-Org-ID header is missing');
@@ -28,7 +30,7 @@ export class TenantGuard implements CanActivate {
       where: {
         userId_orgId: {
           userId: user.id,
-          orgId: orgId as string,
+          orgId: orgId,
         },
       },
     });

@@ -29,7 +29,7 @@ export class DashboardService {
 
     return {
       activeEmployees,
-      totalLiability: latestRun?.totalEarnings || 0,
+      totalLiability,
       totalNetPay: latestRun?.totalNetPay || 0,
       pendingReimbursements: pendingReimbursements._sum.amount || 0,
       nextPayrollDate: '2026-03-31', // Mock

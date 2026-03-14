@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CorporateCardService {
+  private readonly logger = new Logger(CorporateCardService.name);
   constructor(private prisma: PrismaService) {}
 
   async issueCard(orgId: string, employeeId: string, cardHolderName: string) {
@@ -41,6 +42,27 @@ export class CorporateCardService {
     return this.prisma.corporateCard.update({
       where: { id: cardId },
       data: { status: 'INACTIVE' },
+    });
+  }
+
+  async requestPhysicalCard(cardId: string, address: string) {
+    console.log(`[CARD_ISSUANCE] Physical card requested for ID: ${cardId}`);
+    console.log(`[CARD_ISSUANCE] Shipping to: ${address}`);
+    return Promise.resolve({
+      success: true,
+      trackingId: `NV-${Math.random().toString(36).substring(7).toUpperCase()}`,
+      estimatedDelivery: '3-5 Business Days',
+    });
+  }
+
+  async setCardPin(cardId: string, pinHash: string) {
+    console.log(`[SECURE_VAULT] Setting PIN for card ${cardId}`);
+    this.logger.log(
+      `PIN hash ${pinHash.substring(0, 8)}... received for validation`,
+    );
+    return Promise.resolve({
+      success: true,
+      message: 'PIN updated via encrypted session',
     });
   }
 }

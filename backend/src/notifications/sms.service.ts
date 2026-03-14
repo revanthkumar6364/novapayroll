@@ -5,6 +5,7 @@ export class SmsService {
   async sendSms(to: string, message: string) {
     // Mock SMS sending log
     console.log(`[Mock SMS] Sending to ${to}: ${message}`);
+    await Promise.resolve();
     return {
       success: true,
       messageId: Math.random().toString(36).substring(7),

@@ -10,8 +10,10 @@ import { ContractorService } from './contractor.service';
 import { BenefitService } from './benefit.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
+import { PrismaModule } from '../prisma/prisma.module';
+
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, PrismaModule],
   providers: [
     PayrollService,
     TaxService,

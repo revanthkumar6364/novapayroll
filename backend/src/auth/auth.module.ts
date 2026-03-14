@@ -12,7 +12,8 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret',
-      signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN as any) || '1d' },
+      // @ts-expect-error - process.env.JWT_EXPIRES_IN is a string but expiresIn expects specific format
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
     }),
   ],
   providers: [AuthService, JwtStrategy],

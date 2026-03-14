@@ -12,7 +12,11 @@ export class ExpenseService {
   async createRequest(
     orgId: string,
     employeeId: string,
-    data: { amount: number; description: string; attachments?: any },
+    data: {
+      amount: number;
+      description: string;
+      attachments?: Record<string, any>;
+    },
   ) {
     return this.prisma.reimbursementRequest.create({
       data: {

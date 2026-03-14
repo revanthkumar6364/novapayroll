@@ -1,10 +1,16 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+
+interface CreateVendorDto {
+  name: string;
+  email?: string;
+  phone?: string;
+  pan?: string;
+  gstin?: string;
+  bankAccount?: string;
+  ifsc?: string;
+}
 
 interface CreatePaymentDto {
   amount: number;
@@ -38,7 +44,7 @@ export class VendorService {
     });
   }
 
-  async createVendor(orgId: string, dto: any) {
+  async createVendor(orgId: string, dto: CreateVendorDto) {
     return this.prisma.vendor.create({
       data: {
         name: dto.name,
@@ -55,7 +61,7 @@ export class VendorService {
 
   async createPayment(orgId: string, vendorId: string, dto: CreatePaymentDto) {
     const amount = Number(dto.amount);
-    const tdsRate = parseFloat(dto.tdsRate as any) || 0.01;
+    const tdsRate = parseFloat(String(dto.tdsRate)) || 0.01;
     const tdsAmount = amount * tdsRate;
     const netAmount = amount - tdsAmount;
 

@@ -53,7 +53,11 @@ export class WebhookService {
   /**
    * General notification dispatcher for payroll events.
    */
-  async notifyPayrollEvent(orgId: string, eventType: string, data: any) {
+  async notifyPayrollEvent(
+    orgId: string,
+    eventType: string,
+    data: { month: number; year: number; totalNetPay: number },
+  ) {
     // In a production environment, we'd fetch the org's configured webhooks from the DB.
     // For this demo, we'll use a placeholder or check environment variables.
     const message = `🚀 *Payroll Alert*: ${eventType}\nPeriod: ${data.month}/${data.year}\nTotal Disbursed: ₹${data.totalNetPay.toLocaleString()}`;

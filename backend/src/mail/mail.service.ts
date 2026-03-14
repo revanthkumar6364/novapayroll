@@ -8,14 +8,14 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(private config: ConfigService) {
-    const host = this.config.get('SMTP_HOST');
+    const host = this.config.get<string>('SMTP_HOST');
     if (host) {
       this.transporter = nodemailer.createTransport({
         host,
-        port: this.config.get('SMTP_PORT'),
+        port: this.config.get<number>('SMTP_PORT'),
         auth: {
-          user: this.config.get('SMTP_USER'),
-          pass: this.config.get('SMTP_PASS'),
+          user: this.config.get<string>('SMTP_USER'),
+          pass: this.config.get<string>('SMTP_PASS'),
         },
       });
     } else {
@@ -47,8 +47,10 @@ export class MailService {
       try {
         await this.transporter.sendMail(mailOptions);
         this.logger.log(`OTP sent to ${to}`);
-      } catch (error) {
-        this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(`Failed to send email to ${to}: ${errorMessage}`);
         this.logToConsole(mailOptions);
       }
     } else {
@@ -68,9 +70,11 @@ export class MailService {
     if (this.transporter) {
       try {
         await this.transporter.sendMail(mailOptions);
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         this.logger.error(
-          `Failed to send notification to ${to}: ${error.message}`,
+          `Failed to send notification to ${to}: ${errorMessage}`,
         );
         this.logToConsole(mailOptions);
       }
@@ -79,7 +83,7 @@ export class MailService {
     }
   }
 
-  private logToConsole(options: any) {
+  private logToConsole(options: { to: string; subject: string; text: string }) {
     this.logger.log(`
 [DEVELOPMENT MODE - EMAIL]
 To: ${options.to}

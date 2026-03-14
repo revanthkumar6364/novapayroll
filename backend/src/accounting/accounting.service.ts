@@ -17,7 +17,7 @@ export class AccountingService {
       include: { vendor: true },
     });
 
-    const payrolls = await this.prisma.payrollRun.findMany({
+    await this.prisma.payrollRun.findMany({
       where: {
         orgId,
         month: {

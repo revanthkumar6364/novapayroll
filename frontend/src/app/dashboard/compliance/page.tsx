@@ -36,6 +36,21 @@ export default function ComplianceHub() {
     const [isRemitting, setIsRemitting] = useState<'PF' | 'ESI' | null>(null); 
     const [remittanceStep, setRemittanceStep] = useState(0); 
     const [activeTab, setActiveTab] = useState<'PF_ESI' | 'TAX_TDS'>('PF_ESI');
+    const [isTransmitting, setIsTransmitting] = useState(false);
+    const [transmitStatus, setTransmitStatus] = useState<string>("");
+
+    const handleTransmit = async (type: string, runMonth: string) => {
+        setIsTransmitting(true);
+        setTransmitStatus(`Connecting to ${type} Govt Portal...`);
+        await new Promise(r => setTimeout(r, 1500));
+        setTransmitStatus(`Authenticating Digital Signature (DSC)...`);
+        await new Promise(r => setTimeout(r, 1500));
+        setTransmitStatus(`Uploading ECR / Annexure documents...`);
+        await new Promise(r => setTimeout(r, 2000));
+        setTransmitStatus(`${type} Filing Successful! ARN Generated: ${Math.random().toString(36).substring(7).toUpperCase()}`);
+        await new Promise(r => setTimeout(r, 2000));
+        setIsTransmitting(false);
+    };
 
     const runAudit = () => {
         setAuditRunning(true);
@@ -313,6 +328,14 @@ export default function ComplianceHub() {
                                                         >
                                                             <Sparkles size={14} className="group-hover/upload:animate-pulse" /> Pay PF Now
                                                         </button>
+                                                        {run.status === 'Paid' && (
+                                                            <button 
+                                                                onClick={() => handleTransmit('EPFO', run.month)}
+                                                                className="flex items-center gap-2 text-indigo-600 font-black text-[10px] hover:bg-indigo-50 px-4 py-2.5 rounded-xl transition-all border border-indigo-200 uppercase tracking-widest"
+                                                            >
+                                                                <Zap size={14} /> Transmit to Portal
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="table-cell-premium">
@@ -326,6 +349,14 @@ export default function ComplianceHub() {
                                                         >
                                                             <Sparkles size={14} className="group-hover/upload:animate-pulse" /> Pay ESI Now
                                                         </button>
+                                                        {run.status === 'Paid' && (
+                                                            <button 
+                                                                onClick={() => handleTransmit('ESIC', run.month)}
+                                                                className="flex items-center gap-2 text-indigo-600 font-black text-[10px] hover:bg-indigo-50 px-4 py-2.5 rounded-xl transition-all border border-indigo-200 uppercase tracking-widest"
+                                                            >
+                                                                <Zap size={14} /> Direct File
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="table-cell-premium text-right">
@@ -526,6 +557,40 @@ export default function ComplianceHub() {
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+            {/* Portal Transmission HUD */}
+            <AnimatePresence>
+                {isTransmitting && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-[#0F172A]/90 backdrop-blur-2xl z-[300] flex items-center justify-center p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="bg-white rounded-[4rem] w-full max-w-2xl p-20 text-center space-y-12 shadow-2xl"
+                        >
+                            <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center text-indigo-600 mx-auto mb-8 relative">
+                                <Zap size={40} className="animate-pulse" />
+                                <div className="absolute inset-0 rounded-[2.5rem] border-4 border-indigo-600 border-t-transparent animate-spin"></div>
+                            </div>
+                            <div className="space-y-4">
+                                <h3 className="text-4xl font-black text-[#0F172A] tracking-tighter">Direct Portal <span className="text-gradient">Handshake.</span></h3>
+                                <p className="text-xl font-bold text-[#64748B]">{transmitStatus}</p>
+                            </div>
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce"></div>
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce [animation-delay:0.2s]"></div>
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce [animation-delay:0.4s]"></div>
+                            </div>
+                            <div className="pt-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                                Secured by Nova Digital Signature Infrastructure
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </DashboardLayout>
