@@ -25,18 +25,11 @@ import { WalletModule } from './wallet/wallet.module';
 import { CorporateCardModule } from './corporate-card/corporate-card.module';
 import { ExpenseModule } from './expense/expense.module';
 import { AccountingModule } from './accounting/accounting.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    /* 
-    BullModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
-    }),
-    */
     TenantModule,
     PrismaModule,
     AuthModule,
@@ -58,6 +51,7 @@ import { AccountingModule } from './accounting/accounting.module';
     CorporateCardModule,
     ExpenseModule,
     AccountingModule,
+    IntegrationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
