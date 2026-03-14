@@ -1,17 +1,27 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
-    CreditCard, Shield, Lock, Eye, EyeOff, 
-    Plus, Settings, TrendingUp, Filter,
-    ChevronRight, Zap, Globe, MoreHorizontal
+    Shield, Lock, Eye, EyeOff, 
+    Plus, Settings, TrendingUp,
+    ChevronRight, Zap, Globe
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
+interface CorporateCard {
+    id: string;
+    cardHolderName: string;
+    lastFour: string;
+    expiryDate: string;
+    status: string;
+    spent: number;
+    limit: number;
+}
+
 export default function CorporateCards() {
-    const [cards, setCards] = useState<any[]>([]);
+    const [cards, setCards] = useState<CorporateCard[]>([]);
     const [isCardVisible, setIsCardVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 

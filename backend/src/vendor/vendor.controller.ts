@@ -5,10 +5,28 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
 import { VendorService } from './vendor.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+
+interface CreateVendorDto {
+  name: string;
+  email?: string;
+  phone?: string;
+  pan?: string;
+  gstin?: string;
+  bankAccount?: string;
+  ifsc?: string;
+}
+
+interface VendorPaymentDto {
+  amount: number;
+  tdsRate: number;
+  remarks?: string;
+  paymentDate?: string;
+}
 
 @Controller('vendor')
 @UseGuards(JwtAuthGuard)
@@ -16,26 +34,30 @@ export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 
   @Get()
-  async listVendors(@Request() req) {
-    return this.vendorService.listVendors(req.user.orgId);
+  async listVendors(@Req() req: AuthenticatedRequest) {
+    const orgId = req.user.orgs[0].orgId;
+    return this.vendorService.listVendors(orgId);
   }
 
   @Post()
-  async createVendor(@Request() req, @Body() dto: any) {
-    return this.vendorService.createVendor(req.user.orgId, dto);
+  async createVendor(@Req() req: AuthenticatedRequest, @Body() dto: CreateVendorDto) {
+    const orgId = req.user.orgs[0].orgId;
+    return this.vendorService.createVendor(orgId, dto);
   }
 
   @Get('payments')
-  async listPayments(@Request() req) {
-    return this.vendorService.listPayments(req.user.orgId);
+  async listPayments(@Req() req: AuthenticatedRequest) {
+    const orgId = req.user.orgs[0].orgId;
+    return this.vendorService.listPayments(orgId);
   }
 
   @Post(':id/payment')
   async createPayment(
-    @Request() req,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: VendorPaymentDto,
   ) {
-    return this.vendorService.createPayment(req.user.orgId, id, dto);
+    const orgId = req.user.orgs[0].orgId;
+    return this.vendorService.createPayment(orgId, id, dto);
   }
 }

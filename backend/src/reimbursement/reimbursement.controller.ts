@@ -6,11 +6,19 @@ import {
   Param,
   Patch,
   UseGuards,
-  Request,
+  Req,
   Query,
 } from '@nestjs/common';
 import { ReimbursementService } from './reimbursement.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
+
+interface ReimbursementRequestDto {
+  employeeId: string;
+  amount: number;
+  description: string;
+  type?: string;
+}
 
 @Controller('reimbursement')
 @UseGuards(JwtAuthGuard)
@@ -18,27 +26,32 @@ export class ReimbursementController {
   constructor(private readonly reimbursementService: ReimbursementService) {}
 
   @Get()
-  async listRequests(@Request() req, @Query('employeeId') employeeId?: string) {
-    return this.reimbursementService.listRequests(req.user.orgId, employeeId);
+  async listRequests(
+    @Req() req: AuthenticatedRequest,
+    @Query('employeeId') employeeId?: string,
+  ) {
+    const orgId = req.user.orgs[0].orgId;
+    return this.reimbursementService.listRequests(orgId, employeeId);
   }
 
   @Post()
-  async createRequest(@Request() req, @Body() dto: any) {
+  async createRequest(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: ReimbursementRequestDto,
+  ) {
     // If employee is creating, use their employee ID from token if available
     // For now, assuming employeeId is passed or we find it from user.id
-    return this.reimbursementService.createRequest(
-      req.user.orgId,
-      dto.employeeId,
-      dto,
-    );
+    const orgId = req.user.orgs[0].orgId;
+    return this.reimbursementService.createRequest(orgId, dto.employeeId, dto);
   }
 
   @Patch(':id/status')
   async updateStatus(
-    @Request() req,
+    @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body('status') status: string,
   ) {
-    return this.reimbursementService.updateStatus(req.user.orgId, id, status);
+    const orgId = req.user.orgs[0].orgId;
+    return this.reimbursementService.updateStatus(orgId, id, status);
   }
 }

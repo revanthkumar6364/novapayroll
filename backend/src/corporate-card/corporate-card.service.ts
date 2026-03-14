@@ -8,7 +8,9 @@ export class CorporateCardService {
   async issueCard(orgId: string, employeeId: string, cardHolderName: string) {
     // Generate mock card details
     const lastFour = Math.floor(1000 + Math.random() * 9000).toString();
-    const expiryDate = `${Math.floor(1 + Math.random() * 12).toString().padStart(2, '0')}/${(new Date().getFullYear() % 100) + 3}`;
+    const expiryDate = `${Math.floor(1 + Math.random() * 12)
+      .toString()
+      .padStart(2, '0')}/${(new Date().getFullYear() % 100) + 3}`;
 
     return this.prisma.corporateCard.create({
       data: {

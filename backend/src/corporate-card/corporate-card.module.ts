@@ -4,6 +4,6 @@ import { CorporateCardController } from './corporate-card.controller';
 
 @Module({
   providers: [CorporateCardService],
-  controllers: [CorporateCardController]
+  controllers: [CorporateCardController],
 })
 export class CorporateCardModule {}

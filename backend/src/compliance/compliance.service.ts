@@ -2,6 +2,21 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TaxRegime } from '@prisma/client';
 
+interface Earnings {
+  basic: number;
+  hra?: number;
+  allowance?: number;
+  [key: string]: number | undefined;
+}
+
+interface Deductions {
+  pf: number;
+  esi: number;
+  tds: number;
+  lop: number;
+  [key: string]: number | undefined;
+}
+
 @Injectable()
 export class ComplianceService {
   constructor(private prisma: PrismaService) {}
@@ -28,8 +43,10 @@ export class ComplianceService {
       const uan = item.employee.uan || 'NOT_FOUND';
       const name = item.employee.firstName + ' ' + item.employee.lastName;
       const gross = Math.floor(item.netPay / 100); // Simplified for ECR
-      const wages = Math.floor((item.earnings as any).basic / 100);
-      const epfContrib = Math.floor((item.deductions as any).pf / 100);
+      const earnings = item.earnings as unknown as Earnings;
+      const deductions = item.deductions as unknown as Deductions;
+      const wages = Math.floor(earnings.basic / 100);
+      const epfContrib = Math.floor(deductions.pf / 100);
 
       return `${uan}#~#${name}#~#${gross}#~#${wages}#~#${wages}#~#${wages}#~#${epfContrib}#~#0#~#${epfContrib}#~#0#~#0`;
     });
@@ -55,14 +72,13 @@ export class ComplianceService {
     if (!run) throw new NotFoundException('Payroll run not found');
 
     const lines = run.items
-      .filter((item) => (item.deductions as any).esi > 0)
+      .filter((item) => (item.deductions as unknown as Deductions).esi > 0)
       .map((item) => {
         const esiId = item.employee.esiNumber || 'NOT_FOUND';
         const name = item.employee.firstName + ' ' + item.employee.lastName;
-        const gross = Math.floor(
-          (item.netPay + (item.deductions as any).lop) / 100,
-        );
-        const esiContrib = Math.floor((item.deductions as any).esi / 100);
+        const deductions = item.deductions as unknown as Deductions;
+        const gross = Math.floor((item.netPay + (deductions.lop || 0)) / 100);
+        const esiContrib = Math.floor(deductions.esi / 100);
 
         return `${esiId},${name},1,${gross},0,${esiContrib}`;
       });
@@ -98,10 +114,10 @@ export class ComplianceService {
     const anomalies: any[] = [];
 
     for (const item of run.items) {
-      const earnings = item.earnings as any;
-      const deductions = item.deductions as any;
-      const basic = earnings.basic / 100;
-      const pf = deductions.pf / 100;
+      const earnings = item.earnings as unknown as Earnings;
+      const deductions = item.deductions as unknown as Deductions;
+      const basic = (earnings.basic || 0) / 100;
+      const pf = (deductions.pf || 0) / 100;
 
       // 1. PF Ceiling Check (Wage > 15k but PF not capped)
       if (basic > 15000 && pf > 1800) {
@@ -115,8 +131,8 @@ export class ComplianceService {
       }
 
       // 2. ESI Eligibility Check
-      const monthlyGross = (item.netPay + deductions.lop) / 100;
-      if (monthlyGross > 21000 && deductions.esi > 0) {
+      const monthlyGross = (item.netPay + (deductions.lop || 0)) / 100;
+      if (monthlyGross > 21000 && (deductions.esi || 0) > 0) {
         anomalies.push({
           employeeId: item.employeeId,
           name: `${item.employee.firstName} ${item.employee.lastName}`,
@@ -128,10 +144,11 @@ export class ComplianceService {
 
       // 3. Tax Regime Anomaly
       const declaration = item.employee.taxDeclarations[0];
+      const tds = deductions.tds || 0;
       if (
         declaration &&
         declaration.regime === TaxRegime.NEW &&
-        deductions.tds > 10000 &&
+        tds > 10000 &&
         monthlyGross < 70000
       ) {
         anomalies.push({
@@ -139,7 +156,7 @@ export class ComplianceService {
           name: `${item.employee.firstName} ${item.employee.lastName}`,
           type: 'TAX_SLAB_ANOMALY',
           severity: 'LOW',
-          message: `TDS (₹${deductions.tds / 100}) seems high for New Tax Regime at income level ₹${monthlyGross}. Verify declarations.`,
+          message: `TDS (₹${tds / 100}) seems high for New Tax Regime at income level ₹${monthlyGross}. Verify declarations.`,
         });
       }
     }

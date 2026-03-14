@@ -9,7 +9,11 @@ export class ExpenseService {
     private walletService: WalletService,
   ) {}
 
-  async createRequest(orgId: string, employeeId: string, data: { amount: number; description: string; attachments?: any }) {
+  async createRequest(
+    orgId: string,
+    employeeId: string,
+    data: { amount: number; description: string; attachments?: any },
+  ) {
     return this.prisma.reimbursementRequest.create({
       data: {
         orgId,

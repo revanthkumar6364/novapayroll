@@ -24,6 +24,7 @@ import { InviteModule } from './invite/invite.module';
 import { WalletModule } from './wallet/wallet.module';
 import { CorporateCardModule } from './corporate-card/corporate-card.module';
 import { ExpenseModule } from './expense/expense.module';
+import { AccountingModule } from './accounting/accounting.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ExpenseModule } from './expense/expense.module';
     WalletModule,
     CorporateCardModule,
     ExpenseModule,
+    AccountingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

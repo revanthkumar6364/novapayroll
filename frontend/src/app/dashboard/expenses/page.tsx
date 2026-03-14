@@ -3,16 +3,24 @@
 import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
-    FileText, Plus, Scan, CheckCircle2, 
+    FileText, Scan, CheckCircle2, 
     XCircle, Clock, Search, Filter,
-    ChevronRight, ArrowUpRight, Upload, Cloud,
-    ImageIcon, MoreVertical, Brain
+    ArrowUpRight, MoreVertical, Brain
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
+interface Expense {
+    id: string;
+    employee: { name: string };
+    amount: number;
+    description: string;
+    status: string;
+    createdAt: string;
+}
+
 export default function ExpenseManagement() {
-    const [expenses, setExpenses] = useState<any[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
     const [isLoading, setIsLoading] = useState(true);

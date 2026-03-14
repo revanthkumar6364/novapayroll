@@ -41,6 +41,7 @@ model Org {
   approvalPolicies   ApprovalPolicy[]
   wallet             Wallet?
   corporateCards     CorporateCard[]
+  vendorPayoutBatches VendorPayoutBatch[]
 }
 
 model User {
@@ -601,8 +602,22 @@ model VendorPayment {
   status          PayoutStatus       @default(PENDING)
   paymentDate     DateTime           @default(now())
   remarks         String?
+  batchId         String?            @db.Uuid
+  batch           VendorPayoutBatch? @relation(fields: [batchId], references: [id])
   vendor          Vendor             @relation(fields: [vendorId], references: [id])
   org             Org                @relation(fields: [orgId], references: [id])
+}
+
+model VendorPayoutBatch {
+  id              String             @id @default(uuid()) @db.Uuid
+  orgId           String             @db.Uuid
+  totalAmount     Float
+  status          PayoutStatus       @default(PENDING)
+  description     String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  org             Org                @relation(fields: [orgId], references: [id])
+  payments        VendorPayment[]
 }
 
 enum TDSCategory {

@@ -36,6 +36,12 @@ export class PrismaService
               'PayoutBatch',
               'ComplianceMonth',
               'AuditEvent',
+              'Wallet',
+              'WalletTransaction',
+              'CorporateCard',
+              'Vendor',
+              'VendorPayment',
+              'VendorPayoutBatch',
             ];
 
             if (tenantModels.includes(model) && tenantId) {

@@ -44,7 +44,13 @@ export class WalletService {
     });
   }
 
-  async processPayout(orgId: string, amount: number, category: string, description: string, referenceId?: string) {
+  async processPayout(
+    orgId: string,
+    amount: number,
+    category: string,
+    description: string,
+    referenceId?: string,
+  ) {
     const wallet = await this.getWallet(orgId);
 
     if (wallet.balance < amount) {
@@ -77,6 +83,48 @@ export class WalletService {
       where: { walletId: wallet.id },
       orderBy: { createdAt: 'desc' },
       take: 50,
+    });
+  }
+
+  async processBulkPayout(
+    orgId: string,
+    payouts: {
+      amount: number;
+      category: string;
+      description: string;
+      referenceId?: string;
+    }[],
+  ) {
+    const wallet = await this.getWallet(orgId);
+    const totalAmount = payouts.reduce((sum, p) => sum + p.amount, 0);
+
+    if (wallet.balance < totalAmount) {
+      throw new BadRequestException('Insufficient wallet balance for bulk payout');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Deduct total from wallet
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: totalAmount } },
+      });
+
+      // 2. Create high-precision ledger entries for each payout
+      return Promise.all(
+        payouts.map((p) =>
+          tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount: p.amount,
+              type: 'DEBIT',
+              category: p.category,
+              description: p.description,
+              referenceId: p.referenceId,
+              status: 'SUCCESS',
+            },
+          }),
+        ),
+      );
     });
   }
 }
