@@ -385,18 +385,40 @@ model ReportAudit {
 }
 
 model TaxDeclaration {
-  id             String    @id @default(uuid()) @db.Uuid
-  employeeId     String    @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
+  employeeId     String            @db.Uuid
   regime         TaxRegime
-  investments80C Int       @default(0)
-  investments80D Int       @default(0)
-  hraAmount      Int       @default(0)
-  otherIncome    Int       @default(0)
-  isVerified     Boolean   @default(false)
+  investments80C Int               @default(0)
+  investments80D Int               @default(0)
+  hraAmount      Int               @default(0)
+  otherIncome    Int               @default(0)
+  status         DeclarationStatus @default(DRAFT)
+  adminRemarks   String?
   year           Int
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  employee       Employee  @relation(fields: [employeeId], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  employee       Employee          @relation(fields: [employeeId], references: [id])
+  proofs         TaxProof[]
+}
+
+model TaxProof {
+  id               String         @id @default(uuid()) @db.Uuid
+  declarationId    String         @db.Uuid
+  category         String         // 80C, 80D, HRA, etc.
+  fileName         String
+  fileUrl          String
+  amount           Int
+  status           DeclarationStatus @default(PENDING)
+  adminRemarks     String?
+  createdAt        DateTime       @default(now())
+  declaration      TaxDeclaration @relation(fields: [declarationId], references: [id])
+}
+
+enum DeclarationStatus {
+  DRAFT
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
 model OfferLetterTemplate {

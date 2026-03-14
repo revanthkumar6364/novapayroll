@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { TaxRegime } from '@prisma/client';
+import { TaxRegime, DeclarationStatus } from '@prisma/client';
 
 @Injectable()
 export class TaxService {
@@ -9,10 +13,11 @@ export class TaxService {
   async getEmployeeDeclaration(employeeId: string, year: number) {
     return this.prisma.taxDeclaration.findFirst({
       where: { employeeId, year },
+      include: { proofs: true },
     });
   }
 
-  async updateDeclaration(
+  async createOrUpdateDeclaration(
     employeeId: string,
     dto: {
       regime: TaxRegime;
@@ -23,41 +28,122 @@ export class TaxService {
       year: number;
     },
   ) {
+    const existing = await this.getEmployeeDeclaration(employeeId, dto.year);
+
+    if (existing) {
+      if (existing.status === DeclarationStatus.VERIFIED) {
+        throw new BadRequestException('Cannot update a verified declaration');
+      }
+      return this.prisma.taxDeclaration.update({
+        where: { id: existing.id },
+        data: { ...dto, status: DeclarationStatus.DRAFT },
+      });
+    }
+
     return this.prisma.taxDeclaration.create({
-      data: { ...dto, employeeId },
+      data: { ...dto, employeeId, status: DeclarationStatus.DRAFT },
     });
   }
 
-  async verifyDeclaration(id: string, isVerified: boolean) {
+  async submitForVerification(declarationId: string) {
+    return this.prisma.taxDeclaration.update({
+      where: { id: declarationId },
+      data: { status: DeclarationStatus.PENDING },
+    });
+  }
+
+  async addProof(
+    declarationId: string,
+    dto: {
+      category: string;
+      fileName: string;
+      fileUrl: string;
+      amount: number;
+    },
+  ) {
+    return this.prisma.taxProof.create({
+      data: {
+        ...dto,
+        declarationId,
+        status: DeclarationStatus.PENDING,
+      },
+    });
+  }
+
+  async getAdminVerificationQueue(orgId: string) {
+    return this.prisma.taxDeclaration.findMany({
+      where: {
+        employee: { orgId },
+        status: DeclarationStatus.PENDING,
+      },
+      include: {
+        employee: true,
+        proofs: true,
+      },
+    });
+  }
+
+  async reviewDeclaration(
+    id: string,
+    status: DeclarationStatus,
+    adminRemarks?: string,
+  ) {
     return this.prisma.taxDeclaration.update({
       where: { id },
-      data: { isVerified },
+      data: { status, adminRemarks },
     });
   }
 
   /**
-   * Advanced TDS calculation reflecting tax declarations.
+   * Refined TDS calculation: Uses "Verified" proofs for precise calculation
+   * but can fall back to "Declared" for monthly projections.
    */
-  calculateEffectiveTaxableIncome(monthlyGross: number, declaration?: any) {
+  calculateTaxableIncome(
+    monthlyGross: number,
+    declaration?: any,
+    useOnlyVerified = false,
+  ) {
     if (!declaration) return monthlyGross * 12;
 
     const annualGross = monthlyGross * 12;
 
-    // Old regime allows deductions
     if (declaration.regime === TaxRegime.OLD) {
-      // Explicitly cast and provide default values for safety
-      const investments80C = Number(declaration.investments80C || 0);
-      const investments80D = Number(declaration.investments80D || 0);
-      const hraAmount = Number(declaration.hraAmount || 0);
+      let investments80C = Number(declaration.investments80C || 0);
+      let investments80D = Number(declaration.investments80D || 0);
+      let hraAmount = Number(declaration.hraAmount || 0);
+
+      // If strictly verifying, we iterate through proofs
+      if (useOnlyVerified && declaration.proofs) {
+        investments80C = declaration.proofs
+          .filter(
+            (p: any) =>
+              p.category === '80C' && p.status === DeclarationStatus.VERIFIED,
+          )
+          .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+        investments80D = declaration.proofs
+          .filter(
+            (p: any) =>
+              p.category === '80D' && p.status === DeclarationStatus.VERIFIED,
+          )
+          .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+        hraAmount = declaration.proofs
+          .filter(
+            (p: any) =>
+              p.category === 'HRA' && p.status === DeclarationStatus.VERIFIED,
+          )
+          .reduce((sum: number, p: any) => sum + p.amount, 0);
+      }
 
       const deductions =
-        Math.min(investments80C, 150000) + // capped at 1.5L
-        Math.min(investments80D, 25000) + // capped at 25k (general)
+        Math.min(investments80C, 150000) +
+        Math.min(investments80D, 25000) +
         hraAmount;
+
       return Math.max(0, annualGross - deductions);
     }
 
-    // New regime (simplified for FY 25-26) usually doesn't allow these deductions
     return annualGross;
   }
 }
