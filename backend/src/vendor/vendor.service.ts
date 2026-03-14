@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 
@@ -99,7 +103,12 @@ export class VendorService {
         },
       });
 
-      const payoutsToProcess: { amount: number; category: string; description: string; referenceId: string }[] = [];
+      const payoutsToProcess: {
+        amount: number;
+        category: string;
+        description: string;
+        referenceId: string;
+      }[] = [];
 
       // 2. Create individual payments
       for (const p of dto) {

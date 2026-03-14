@@ -7,6 +7,7 @@ export class ContractorService {
   constructor(private prisma: PrismaService) {}
 
   async onboardContractor(data: {
+    orgId: string;
     employeeId: string;
     type: ContractorType;
     pan: string;
@@ -18,6 +19,7 @@ export class ContractorService {
 
     return this.prisma.contractor.create({
       data: {
+        orgId: data.orgId,
         employeeId: data.employeeId,
         type: data.type,
         pan: data.pan,

@@ -99,7 +99,9 @@ export class WalletService {
     const totalAmount = payouts.reduce((sum, p) => sum + p.amount, 0);
 
     if (wallet.balance < totalAmount) {
-      throw new BadRequestException('Insufficient wallet balance for bulk payout');
+      throw new BadRequestException(
+        'Insufficient wallet balance for bulk payout',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {

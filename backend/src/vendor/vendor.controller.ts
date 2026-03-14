@@ -40,7 +40,10 @@ export class VendorController {
   }
 
   @Post()
-  async createVendor(@Req() req: AuthenticatedRequest, @Body() dto: CreateVendorDto) {
+  async createVendor(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateVendorDto,
+  ) {
     const orgId = req.user.orgs[0].orgId;
     return this.vendorService.createVendor(orgId, dto);
   }

@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WebhookService } from '../notifications/webhook.service';
 import { CreatePayrollRunDto } from './dto/create-payroll-run.dto';
 import { PayrollStatus, Status } from '@prisma/client';
 import * as compliance from './compliance.utils';
@@ -14,7 +15,10 @@ interface PayrollComponent {
 
 @Injectable()
 export class PayrollService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private webhookService: WebhookService,
+  ) {}
 
   async listRuns(orgId: string) {
     return this.prisma.payrollRun.findMany({
@@ -196,13 +200,25 @@ export class PayrollService {
   }
 
   async lockRun(runId: string) {
-    return this.prisma.payrollRun.update({
+    const updatedRun = await this.prisma.payrollRun.update({
       where: { id: runId },
       data: {
         status: PayrollStatus.LOCKED,
         lockedAt: new Date(),
       },
     });
+
+    await this.webhookService.notifyPayrollEvent(
+      updatedRun.orgId,
+      'PAYROLL_LOCKED',
+      {
+        month: updatedRun.month,
+        year: updatedRun.year,
+        totalNetPay: updatedRun.totalNetPay,
+      },
+    );
+
+    return updatedRun;
   }
 
   async getMyPayslips(userId: string) {

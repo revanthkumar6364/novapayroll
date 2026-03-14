@@ -79,23 +79,20 @@ export default function ComplianceHub() {
         setTimeout(() => setRemittanceStep(4), 5500); // Success
     };
 
-    const downloadECR = (type: 'PF' | 'ESI', month: string) => {
-        let content = '';
-        if (type === 'PF') {
-            content = `ECR FORMAT (EPFO)\nUAN# MemberName# GrossWages# EPF_Wages# EPS_Wages# EDLI_Wages# EPF_Contri# EPS_Contri# EPF_Diff# NCP_Days# Refund\n101234567890 Aarav_Sharma 45000 15000 15000 15000 1800 1250 550 0 0\n101234567891 Sneha_Patel 38000 15000 15000 15000 1800 1250 550 0 0\n... (Generated for ${month})`;
-        } else {
-            content = `ESIC MONTHLY CONTRIBUTION\nIP_Number# IP_Name# No_of_Days# Total_Monthly_Wages# Reason_Code# Last_Working_Day\n1112345678 Reva 31 18500 0\n1112345679 Amit 31 19000 0\n... (Generated for ${month})`;
-        }
+    const downloadECR = (type: 'PF' | 'ESI', runMonth: string) => {
+        // Parse month and year from string like "March 2026"
+        const [monthName, year] = runMonth.split(' ');
+        const monthMap: Record<string, number> = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+            'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
+        };
+        const monthNum = monthMap[monthName] || 3;
         
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${type}_Statement_${month.replace(' ', '_')}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const endpoint = type === 'PF' ? '/api/compliance/pf-ecr' : '/api/compliance/esi-ecr';
+        const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${endpoint}?month=${monthNum}&year=${year}`;
+        
+        // Open in new tab to trigger download
+        window.open(url, '_blank');
     };
 
     return (

@@ -1,33 +1,60 @@
-import { Controller, Get, Param, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Res,
+  UseGuards,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { ComplianceService } from './compliance.service';
+import { ChallanService } from './challan.service';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 
 @Controller('compliance')
 @UseGuards(JwtAuthGuard)
 export class ComplianceController {
-  constructor(private readonly complianceService: ComplianceService) {}
+  constructor(
+    private readonly complianceService: ComplianceService,
+    private readonly challanService: ChallanService,
+  ) {}
 
-  @Get('pf-ecr/:runId')
-  async downloadPfEcr(@Param('runId') runId: string, @Res() res: Response) {
-    const ecr = await this.complianceService.generatePfEcr(runId);
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=PF_ECR_${runId}.txt`,
+  @Get('pf-ecr')
+  async downloadPfEcr(
+    @Req() req: AuthenticatedRequest,
+    @Query('month') month: string,
+    @Query('year') year: string,
+    @Res() res: Response,
+  ) {
+    const orgId = req.user.orgs[0].orgId;
+    const { filename, content } = await this.challanService.generatePfEcr(
+      orgId,
+      parseInt(month),
+      parseInt(year),
     );
-    return res.send(ecr);
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    return res.send(content);
   }
 
-  @Get('esi-ecr/:runId')
-  async downloadEsiEcr(@Param('runId') runId: string, @Res() res: Response) {
-    const ecr = await this.complianceService.generateEsiEcr(runId);
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=ESI_ECR_${runId}.txt`,
+  @Get('esi-ecr')
+  async downloadEsiEcr(
+    @Req() req: AuthenticatedRequest,
+    @Query('month') month: string,
+    @Query('year') year: string,
+    @Res() res: Response,
+  ) {
+    const orgId = req.user.orgs[0].orgId;
+    const { filename, content } = await this.challanService.generateEsicChallan(
+      orgId,
+      parseInt(month),
+      parseInt(year),
     );
-    return res.send(ecr);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    return res.send(content);
   }
 
   @Get('audit/:runId')

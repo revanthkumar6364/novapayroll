@@ -7,8 +7,10 @@ import { OfferService } from './offer.service';
 import { ReportService } from './report.service';
 import { ContractorService } from './contractor.service';
 import { BenefitService } from './benefit.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
+  imports: [NotificationsModule],
   providers: [
     PayrollService,
     TaxService,

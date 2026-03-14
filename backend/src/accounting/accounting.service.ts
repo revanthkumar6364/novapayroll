@@ -28,8 +28,15 @@ export class AccountingService {
     });
 
     // Mock CSV generation for "Elite" feel
-    const headers = ['Date', 'Type', 'Account', 'Voucher Type', 'Amount', 'Remarks'];
-    const rows = payments.map(p => [
+    const headers = [
+      'Date',
+      'Type',
+      'Account',
+      'Voucher Type',
+      'Amount',
+      'Remarks',
+    ];
+    const rows = payments.map((p) => [
       p.paymentDate.toISOString().split('T')[0],
       'Payment',
       p.vendor.name,
@@ -38,7 +45,7 @@ export class AccountingService {
       p.remarks || 'Vendor Settlement',
     ]);
 
-    return [headers, ...rows].map(e => e.join(',')).join('\n');
+    return [headers, ...rows].map((e) => e.join(',')).join('\n');
   }
 
   async generateZohoExport(orgId: string, startDate: Date, endDate: Date) {
@@ -53,8 +60,14 @@ export class AccountingService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const headers = ['Transaction Date', 'Description', 'Amount', 'Transaction Type', 'Account Name'];
-    const rows = transactions.map(t => [
+    const headers = [
+      'Transaction Date',
+      'Description',
+      'Amount',
+      'Transaction Type',
+      'Account Name',
+    ];
+    const rows = transactions.map((t) => [
       t.createdAt.toISOString().split('T')[0],
       t.description || t.category,
       t.amount,
@@ -62,6 +75,6 @@ export class AccountingService {
       'Nova Wallet',
     ]);
 
-    return [headers, ...rows].map(e => e.join(',')).join('\n');
+    return [headers, ...rows].map((e) => e.join(',')).join('\n');
   }
 }
