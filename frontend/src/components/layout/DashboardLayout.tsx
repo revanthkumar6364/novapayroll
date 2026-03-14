@@ -7,7 +7,8 @@ import {
     CalendarCheck, FileText, Landmark, Puzzle,
     ChevronRight, HelpCircle,
     FolderOpen, HeartPulse, Sparkles, CreditCard, Building, PlusCircle,
-    LucideIcon
+    LucideIcon,
+    Brain
 } from "lucide-react";
 import Logo from "../ui/Logo";
 import Link from "next/link";
@@ -62,7 +63,7 @@ const ALL_SECTIONS: NavigationSection[] = [
         roles: ["OWNER", "ADMIN_FINANCE", "ADMIN_HR", "EMPLOYEE"],
         items: [
             { label: "Attendance", icon: CalendarCheck, href: "/dashboard/attendance" },
-            { label: "Reimbursements", icon: Receipt, href: "/dashboard/reimbursements" },
+            { label: "Scan & Expense", icon: Brain, href: "/dashboard/expenses" },
             { label: "Tax Optimizer", icon: Sparkles, href: "/dashboard/tax-optimizer" },
             { label: "Tax Deductions", icon: ShieldCheck, href: "/dashboard/tax-deductions" },
         ]
@@ -84,7 +85,7 @@ const ALL_SECTIONS: NavigationSection[] = [
             { label: "Pay Employees", icon: Calculator, href: "/dashboard/payroll-run" },
             { label: "Pay Contractors", icon: User, href: "/dashboard/contractors" },
             { label: "Approvals", icon: FileText, href: "/dashboard/approvals" },
-            { label: "Payouts Hub", icon: Landmark, href: "/dashboard/payouts" },
+            { label: "Banking Hub", icon: Landmark, href: "/dashboard/banking" },
             { label: "Compliance Hub", icon: ShieldCheck, href: "/dashboard/compliance" },
             { label: "Developer Sandbox", icon: Sparkles, href: "/dashboard/sandbox" },
             { label: "Reports", icon: BarChart3, href: "/dashboard/reports" },

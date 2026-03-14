@@ -21,6 +21,9 @@ import { ForexModule } from './forex/forex.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ReimbursementModule } from './reimbursement/reimbursement.module';
 import { InviteModule } from './invite/invite.module';
+import { WalletModule } from './wallet/wallet.module';
+import { CorporateCardModule } from './corporate-card/corporate-card.module';
+import { ExpenseModule } from './expense/expense.module';
 
 @Module({
   imports: [
@@ -50,6 +53,9 @@ import { InviteModule } from './invite/invite.module';
     VendorModule,
     ReimbursementModule,
     InviteModule,
+    WalletModule,
+    CorporateCardModule,
+    ExpenseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

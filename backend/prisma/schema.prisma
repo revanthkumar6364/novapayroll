@@ -39,6 +39,8 @@ model Org {
   vendorPayments     VendorPayment[]
   reimbursementRequests ReimbursementRequest[]
   approvalPolicies   ApprovalPolicy[]
+  wallet             Wallet?
+  corporateCards     CorporateCard[]
 }
 
 model User {
@@ -619,4 +621,43 @@ model ApprovalPolicy {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   org         Org      @relation(fields: [orgId], references: [id])
+}
+model Wallet {
+  id           String              @id @default(uuid()) @db.Uuid
+  orgId        String              @unique @db.Uuid
+  balance      Float               @default(0.0)
+  currency     String              @default("INR")
+  status       Status              @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  org          Org                 @relation(fields: [orgId], references: [id])
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String        @id @default(uuid()) @db.Uuid
+  walletId    String        @db.Uuid
+  amount      Float
+  type        String        // DEBIT, CREDIT
+  category    String        // PAYROLL, VENDOR, TAX, TOPUP, REIMBURSEMENT
+  status      PayoutStatus  @default(SUCCESS)
+  description String?
+  referenceId String?       // Link to PayrollRun, VendorPayment, etc.
+  createdAt   DateTime      @default(now())
+  wallet      Wallet        @relation(fields: [walletId], references: [id])
+}
+
+model CorporateCard {
+  id            String   @id @default(uuid()) @db.Uuid
+  orgId         String   @db.Uuid
+  employeeId    String   @db.Uuid
+  cardHolderName String
+  lastFour      String
+  expiryDate    String   // MM/YY
+  status        Status   @default(ACTIVE)
+  limit         Float    @default(50000.0)
+  spent         Float    @default(0.0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  org           Org      @relation(fields: [orgId], references: [id])
 }
